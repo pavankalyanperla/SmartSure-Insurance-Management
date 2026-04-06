@@ -1,0 +1,19 @@
+<Solution>
+  <Project Path="gateway/ApiGateway/ApiGateway.csproj" />
+  <Project Path="services/AdminService/AdminService.API/AdminService.API.csproj" />
+  <Project Path="services/AdminService/AdminService.Application/AdminService.Application.csproj" />
+  <Project Path="services/AdminService/AdminService.Domain/AdminService.Domain.csproj" />
+  <Project Path="services/AdminService/AdminService.Infrastructure/AdminService.Infrastructure.csproj" />
+  <Project Path="services/ClaimsService/ClaimsService.API/ClaimsService.API.csproj" />
+  <Project Path="services/ClaimsService/ClaimsService.Application/ClaimsService.Application.csproj" />
+  <Project Path="services/ClaimsService/ClaimsService.Domain/ClaimsService.Domain.csproj" />
+  <Project Path="services/ClaimsService/ClaimsService.Infrastructure/ClaimsService.Infrastructure.csproj" />
+  <Project Path="services/IdentityService/IdentityService.API/IdentityService.API.csproj" />
+  <Project Path="services/IdentityService/IdentityService.Application/IdentityService.Application.csproj" />
+  <Project Path="services/IdentityService/IdentityService.Domain/IdentityService.Domain.csproj" />
+  <Project Path="services/IdentityService/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj" />
+  <Project Path="services/PolicyService/PolicyService.API/PolicyService.API.csproj" />
+  <Project Path="services/PolicyService/PolicyService.Application/PolicyService.Application.csproj" />
+  <Project Path="services/PolicyService/PolicyService.Domain/PolicyService.Domain.csproj" />
+  <Project Path="services/PolicyService/PolicyService.Infrastructure/PolicyService.Infrastructure.csproj" />
+</Solution>

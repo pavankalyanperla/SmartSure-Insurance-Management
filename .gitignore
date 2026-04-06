@@ -1,0 +1,35 @@
+# .NET build outputs
+**/bin/
+**/obj/
+**/artifacts/
+
+# EF Core
+**/*.Designer.cs
+
+# User secrets
+**/appsettings.Development.json
+**/*.user
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+
+# Logs
+**/logs/
+*.log
+
+# Uploaded files
+**/wwwroot/uploads/
+
+# Node modules
+**/node_modules/
+
+# Angular build
+**/dist/
+
+# Temp projects
+HashGenerator/
+
+# Windows
+Thumbs.db
+Desktop.ini

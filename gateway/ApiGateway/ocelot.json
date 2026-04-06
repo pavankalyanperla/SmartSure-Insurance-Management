@@ -28,7 +28,8 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"
-      }
+      },
+      "SwaggerKey": "identity"
     },
     {
       "DownstreamPathTemplate": "/api/policies/{everything}",
@@ -40,7 +41,8 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"
-      }
+      },
+      "SwaggerKey": "policy"
     },
     {
       "DownstreamPathTemplate": "/api/claims/{everything}",
@@ -52,7 +54,8 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"
-      }
+      },
+      "SwaggerKey": "claims"
     },
     {
       "DownstreamPathTemplate": "/api/admin/{everything}",
@@ -64,7 +67,50 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"
-      }
+      },
+      "SwaggerKey": "admin"
+    }
+  ],
+  "SwaggerEndPoints": [
+    {
+      "Key": "identity",
+      "Config": [
+        {
+          "Name": "SmartSure - Identity Service",
+          "Version": "v1",
+          "Url": "http://localhost:5265/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "policy",
+      "Config": [
+        {
+          "Name": "SmartSure - Policy Service",
+          "Version": "v1",
+          "Url": "http://localhost:5145/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "claims",
+      "Config": [
+        {
+          "Name": "SmartSure - Claims Service",
+          "Version": "v1",
+          "Url": "http://localhost:5084/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "admin",
+      "Config": [
+        {
+          "Name": "SmartSure - Admin Service",
+          "Version": "v1",
+          "Url": "http://localhost:5073/swagger/v1/swagger.json"
+        }
+      ]
     }
   ],
   "GlobalConfiguration": {

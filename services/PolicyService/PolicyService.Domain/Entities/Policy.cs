@@ -16,4 +16,5 @@ public class Policy
 
     public PolicyType PolicyType { get; set; } = null!;
     public Premium? Premium { get; set; }
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

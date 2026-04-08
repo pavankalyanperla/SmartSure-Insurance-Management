@@ -106,6 +106,18 @@ public class PolicyAppService : IPolicyService
         };
 
         var created = await _repo.CreatePolicyAsync(policy);
+
+        var payment = new Payment
+        {
+            PolicyId = created.Id,
+            UserId = userId,
+            Amount = premium.FinalAmount,
+            PaymentMethod = "Online",
+            Status = "Success",
+            TransactionId = $"TXN-{DateTime.UtcNow.Ticks}"
+        };
+        await _repo.CreatePaymentAsync(payment);
+
         return MapToResponse(created, policyType.Name);
     }
 
@@ -142,6 +154,20 @@ public class PolicyAppService : IPolicyService
         return _repo.GetTotalRevenueAsync();
     }
 
+    public async Task<PaymentResponseDto> GetPaymentByPolicyIdAsync(int policyId)
+    {
+        var payment = await _repo.GetPaymentByPolicyIdAsync(policyId)
+            ?? throw new InvalidOperationException("Payment not found.");
+
+        return MapPaymentToResponse(payment);
+    }
+
+    public async Task<List<PaymentResponseDto>> GetMyPaymentsAsync(int userId)
+    {
+        var payments = await _repo.GetPaymentsByUserIdAsync(userId);
+        return payments.Select(MapPaymentToResponse).ToList();
+    }
+
     private static PolicyResponseDto MapToResponse(Policy policy, string typeName) => new()
     {
         Id = policy.Id,
@@ -152,5 +178,16 @@ public class PolicyAppService : IPolicyService
         EndDate = policy.EndDate,
         PremiumAmount = policy.PremiumAmount,
         CreatedAt = policy.CreatedAt
+    };
+
+    private static PaymentResponseDto MapPaymentToResponse(Payment payment) => new()
+    {
+        Id = payment.Id,
+        PolicyId = payment.PolicyId,
+        Amount = payment.Amount,
+        PaymentMethod = payment.PaymentMethod,
+        Status = payment.Status,
+        TransactionId = payment.TransactionId,
+        PaymentDate = payment.PaymentDate
     };
 }

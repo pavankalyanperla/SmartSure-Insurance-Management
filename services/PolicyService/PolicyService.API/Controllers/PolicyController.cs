@@ -4,6 +4,7 @@ using PolicyService.Application.DTOs;
 using PolicyService.Application.Interfaces;
 using PolicyService.Domain.Enums;
 using PolicyService.Infrastructure.Messaging;
+using PolicyService.Infrastructure.Repositories;
 using System.Security.Claims;
 
 namespace PolicyService.API.Controllers;
@@ -15,11 +16,13 @@ public class PolicyController : ControllerBase
 {
     private readonly IPolicyService _policyService;
     private readonly RabbitMQPublisher _publisher;
+    private readonly AdoPolicyRepository _adoRepository;
 
-    public PolicyController(IPolicyService policyService, RabbitMQPublisher publisher)
+    public PolicyController(IPolicyService policyService, RabbitMQPublisher publisher, AdoPolicyRepository adoRepository)
     {
         _policyService = policyService;
         _publisher = publisher;
+        _adoRepository = adoRepository;
     }
 
     [HttpGet("types")]
@@ -79,11 +82,39 @@ public class PolicyController : ControllerBase
         return Ok(policies);
     }
 
+    [HttpGet("my/payments")]
+    [Authorize(Roles = "CUSTOMER")]
+    public async Task<IActionResult> GetMyPayments()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+
+        if (!int.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        var payments = await _policyService.GetMyPaymentsAsync(userId);
+        return Ok(payments);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetPolicy(int id)
     {
         var policy = await _policyService.GetPolicyByIdAsync(id);
         return policy is null ? NotFound() : Ok(policy);
+    }
+
+    [HttpGet("{id}/payment")]
+    public async Task<IActionResult> GetPolicyPayment(int id)
+    {
+        try
+        {
+            var payment = await _policyService.GetPaymentByPolicyIdAsync(id);
+            return Ok(payment);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id}/status")]
@@ -118,6 +149,23 @@ public class PolicyController : ControllerBase
         {
             totalPolicies,
             totalRevenue
+        });
+    }
+
+    [HttpGet("admin/ado/stats")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<IActionResult> GetStatsViaAdo()
+    {
+        var count = await _adoRepository.GetTotalPoliciesCountAsync();
+        var revenue = await _adoRepository.GetTotalRevenueAsync();
+        var activePolicies = await _adoRepository.GetPoliciesByStatusAsync(1);
+
+        return Ok(new
+        {
+            message = "Data fetched using ADO.NET (raw SQL - no EF Core)",
+            totalPoliciesViaAdo = count,
+            totalRevenueViaAdo = revenue,
+            activePoliciesCount = activePolicies.Rows.Count
         });
     }
 }

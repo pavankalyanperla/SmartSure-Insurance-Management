@@ -29,6 +29,7 @@ builder.Services.AddDbContext<PolicyDbContext>(options =>
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
 builder.Services.AddScoped<IPolicyService, PolicyAppService>();
 builder.Services.AddScoped<RabbitMQPublisher>();
+builder.Services.AddScoped<AdoPolicyRepository>();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

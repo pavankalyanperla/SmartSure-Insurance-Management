@@ -10,6 +10,7 @@ public class PolicyDbContext : DbContext
     public DbSet<PolicyType> PolicyTypes => Set<PolicyType>();
     public DbSet<Policy> Policies => Set<Policy>();
     public DbSet<Premium> Premiums => Set<Premium>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,6 +23,23 @@ public class PolicyDbContext : DbContext
             .HasOne(p => p.Premium)
             .WithOne(pr => pr.Policy)
             .HasForeignKey<Premium>(pr => pr.PolicyId);
+
+        modelBuilder.Entity<Payment>()
+            .HasOne(p => p.Policy)
+            .WithMany(p => p.Payments)
+            .HasForeignKey(p => p.PolicyId);
+
+        modelBuilder.Entity<Payment>()
+            .Property(p => p.TransactionId)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<Payment>()
+            .Property(p => p.Status)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<Payment>()
+            .Property(p => p.PaymentMethod)
+            .HasMaxLength(50);
 
         modelBuilder.Entity<PolicyType>().HasData(
             new PolicyType { Id = 1, Name = "Health Insurance", Description = "Covers medical expenses", BaseAmount = 5000, IsActive = true, CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) },

@@ -22,6 +22,48 @@ namespace PolicyService.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("PolicyService.Domain.Entities.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("PolicyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TransactionId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PolicyId");
+
+                    b.ToTable("Payments");
+                });
+
             modelBuilder.Entity("PolicyService.Domain.Entities.Policy", b =>
                 {
                     b.Property<int>("Id")
@@ -173,6 +215,17 @@ namespace PolicyService.Infrastructure.Data.Migrations
                     b.ToTable("Premiums");
                 });
 
+            modelBuilder.Entity("PolicyService.Domain.Entities.Payment", b =>
+                {
+                    b.HasOne("PolicyService.Domain.Entities.Policy", "Policy")
+                        .WithMany("Payments")
+                        .HasForeignKey("PolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Policy");
+                });
+
             modelBuilder.Entity("PolicyService.Domain.Entities.Policy", b =>
                 {
                     b.HasOne("PolicyService.Domain.Entities.PolicyType", "PolicyType")
@@ -197,6 +250,8 @@ namespace PolicyService.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("PolicyService.Domain.Entities.Policy", b =>
                 {
+                    b.Navigation("Payments");
+
                     b.Navigation("Premium");
                 });
 

@@ -56,4 +56,21 @@ public class PolicyRepository : IPolicyRepository
 
     public async Task<decimal> GetTotalRevenueAsync()
         => await _db.Policies.SumAsync(p => p.PremiumAmount);
+
+    public async Task<Payment> CreatePaymentAsync(Payment payment)
+    {
+        _db.Payments.Add(payment);
+        await _db.SaveChangesAsync();
+        return payment;
+    }
+
+    public async Task<List<Payment>> GetPaymentsByUserIdAsync(int userId)
+        => await _db.Payments
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.PaymentDate)
+            .ToListAsync();
+
+    public async Task<Payment?> GetPaymentByPolicyIdAsync(int policyId)
+        => await _db.Payments
+            .FirstOrDefaultAsync(p => p.PolicyId == policyId);
 }

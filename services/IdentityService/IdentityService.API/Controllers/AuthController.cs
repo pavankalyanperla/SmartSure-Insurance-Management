@@ -2,6 +2,7 @@ using IdentityService.API.Helpers;
 using IdentityService.Application.DTOs;
 using IdentityService.Application.Interfaces;
 using IdentityService.Domain.Interfaces;
+using IdentityService.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -15,12 +16,14 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly IAuthRepository _repository;
     private readonly JwtHelper _jwtHelper;
+    private readonly AdoUserRepository _adoRepository;
 
-    public AuthController(IAuthService authService, IAuthRepository repository, JwtHelper jwtHelper)
+    public AuthController(IAuthService authService, IAuthRepository repository, JwtHelper jwtHelper, AdoUserRepository adoRepository)
     {
         _authService = authService;
         _repository = repository;
         _jwtHelper = jwtHelper;
+        _adoRepository = adoRepository;
     }
 
     [HttpPost("register")]
@@ -112,5 +115,24 @@ public class AuthController : ControllerBase
     {
         var updated = await _authService.UpdateUserStatusAsync(userId, dto.IsActive);
         return updated ? Ok(new { success = true }) : NotFound();
+    }
+
+    [HttpGet("admin/users/ado")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<IActionResult> GetUsersViaAdo()
+    {
+        var users = await _adoRepository.GetUserByEmailAsync("admin@smartsure.com");
+        var count = await _adoRepository.GetTotalUserCountAsync();
+        var allUsers = await _adoRepository.GetAllUsersAsDataTableAsync();
+
+        var result = new
+        {
+            message = "Data fetched using ADO.NET (raw SQL - no EF Core)",
+            totalUsersViaAdo = count,
+            adminUserViaAdo = users,
+            allUsersCount = allUsers.Rows.Count
+        };
+
+        return Ok(result);
     }
 }

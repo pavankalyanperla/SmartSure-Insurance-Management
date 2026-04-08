@@ -13,4 +13,7 @@ public interface IPolicyRepository
     Task<bool> SaveChangesAsync();
     Task<int> GetTotalPoliciesCountAsync();
     Task<decimal> GetTotalRevenueAsync();
+    Task<Payment> CreatePaymentAsync(Payment payment);
+    Task<List<Payment>> GetPaymentsByUserIdAsync(int userId);
+    Task<Payment?> GetPaymentByPolicyIdAsync(int policyId);
 }

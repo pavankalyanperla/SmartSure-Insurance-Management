@@ -50,6 +50,67 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequestDto dto)
+    {
+        try
+        {
+            var result = await _authService.SendRegistrationOtpAsync(dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("resend-otp")]
+    public async Task<IActionResult> ResendOtp([FromBody] string email)
+    {
+        try
+        {
+            var dto = new SendOtpRequestDto
+            {
+                Email = email,
+                FullName = "SmartSure User"
+            };
+
+            var result = await _authService.SendRegistrationOtpAsync(dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("verify-register")]
+    public async Task<IActionResult> VerifyRegister([FromBody] VerifyRegistrationRequestDto dto)
+    {
+        try
+        {
+            var result = await _authService.VerifyRegistrationOtpAsync(dto);
+
+            var user = await _repository.GetByEmailAsync(dto.Email.ToLower());
+            if (user is not null)
+            {
+                var (token, expiresAt) = _jwtHelper.GenerateToken(user);
+                result.Token = token;
+                result.ExpiresAt = expiresAt;
+            }
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {

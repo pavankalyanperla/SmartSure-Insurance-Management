@@ -1,0 +1,32 @@
+=== SIDE-BY-SIDE AUTHENTICATED FUNCTIONAL SMOKE ===
+Gateway: pass=24 fail=0
+Direct: pass=24 fail=0
+Label|Gateway|Direct
+---|---|---
+Admin claims list|200 (PASS)|200 (PASS)
+Admin dashboard|200 (PASS)|200 (PASS)
+Admin policy type create|200 (PASS)|200 (PASS)
+Admin policy type delete|200 (PASS)|200 (PASS)
+Admin policy type update|200 (PASS)|200 (PASS)
+Admin policy types list|200 (PASS)|200 (PASS)
+Admin user status update (disable)|200 (PASS)|200 (PASS)
+Admin user status update (enable)|200 (PASS)|200 (PASS)
+Admin users list|200 (PASS)|200 (PASS)
+Auth login (admin)|200 (PASS)|200 (PASS)
+Auth register (customer)|200 (PASS)|200 (PASS)
+Claim create (customer)|200 (PASS)|200 (PASS)
+Claim status update (admin)|200 (PASS)|200 (PASS)
+Claim submit (customer)|200 (PASS)|200 (PASS)
+Claims admin list|200 (PASS)|200 (PASS)
+Identity admin update user status (disable)|200 (PASS)|200 (PASS)
+Identity admin update user status (enable)|200 (PASS)|200 (PASS)
+Identity admin users count|200 (PASS)|200 (PASS)
+Identity admin users list|200 (PASS)|200 (PASS)
+Identity profile (customer)|200 (PASS)|200 (PASS)
+Policy create (customer)|200 (PASS)|200 (PASS)
+Policy my list (customer)|200 (PASS)|200 (PASS)
+Policy premium calculate (customer)|200 (PASS)|200 (PASS)
+Policy types list|200 (PASS)|200 (PASS)
+
+=== FAILURES ===
+None

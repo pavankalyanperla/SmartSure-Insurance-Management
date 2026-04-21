@@ -36,3 +36,23 @@ public class UpdateUserStatusRequestDto
 {
     public bool IsActive { get; set; }
 }
+
+public class SendOtpRequestDto
+{
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+}
+
+public class VerifyRegistrationRequestDto
+{
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string OtpCode { get; set; } = string.Empty;
+}
+
+public class OtpSendResultDto
+{
+    public string Message { get; set; } = string.Empty;
+    public string? DevOtpCode { get; set; }
+}

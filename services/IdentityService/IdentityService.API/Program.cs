@@ -4,6 +4,7 @@ using IdentityService.Application.Services;
 using IdentityService.Domain.Interfaces;
 using IdentityService.Infrastructure.Data;
 using IdentityService.Infrastructure.Repositories;
+using IdentityService.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -27,6 +28,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Repository & Services (Infrastructure & Application layers)
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddScoped<AdoUserRepository>();
 

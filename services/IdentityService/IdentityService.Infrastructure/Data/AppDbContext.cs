@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,6 +19,14 @@ public class AppDbContext : DbContext
             entity.Property(u => u.Email).IsRequired().HasMaxLength(150);
             entity.Property(u => u.FullName).IsRequired().HasMaxLength(100);
             entity.Property(u => u.Role).HasDefaultValue("CUSTOMER");
+        });
+
+        modelBuilder.Entity<OtpVerification>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+            entity.HasIndex(o => o.Email);
+            entity.Property(o => o.Email).IsRequired().HasMaxLength(150);
+            entity.Property(o => o.OtpCode).IsRequired().HasMaxLength(6);
         });
 
         modelBuilder.Entity<User>().HasData(new User

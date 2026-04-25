@@ -21,9 +21,22 @@ public class EmailService : IEmailService
         var smtpHost = emailSettings["SmtpHost"] ?? throw new InvalidOperationException("EmailSettings:SmtpHost is missing.");
         var smtpPortValue = emailSettings["SmtpPort"] ?? throw new InvalidOperationException("EmailSettings:SmtpPort is missing.");
         var fromEmail = emailSettings["FromEmail"] ?? throw new InvalidOperationException("EmailSettings:FromEmail is missing.");
-        var appPassword = emailSettings["AppPassword"] ?? throw new InvalidOperationException("EmailSettings:AppPassword is missing.");
         var fromName = emailSettings["FromName"] ?? "SmartSure Insurance";
+      var smtpUser = emailSettings["Username"] ?? fromEmail;
+      var smtpPassword = emailSettings["Password"] ?? emailSettings["AppPassword"];
+      var useAuthentication = bool.TryParse(emailSettings["UseAuthentication"], out var authFlag) ? authFlag : true;
+      var useStartTls = bool.TryParse(emailSettings["UseStartTls"], out var tlsFlag) ? tlsFlag : true;
         var smtpPort = int.Parse(smtpPortValue);
+
+      if (string.IsNullOrWhiteSpace(smtpHost) || string.IsNullOrWhiteSpace(fromEmail))
+      {
+        throw new InvalidOperationException("Email delivery is not configured correctly. Set EmailSettings in IdentityService appsettings.");
+      }
+
+      if (useAuthentication && string.IsNullOrWhiteSpace(smtpPassword))
+      {
+        throw new InvalidOperationException("EmailSettings:Password (or AppPassword) is required when UseAuthentication is true.");
+      }
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(fromName, fromEmail));
@@ -85,11 +98,14 @@ public class EmailService : IEmailService
         await client.ConnectAsync(
             smtpHost,
             smtpPort,
-            SecureSocketOptions.StartTls);
+          useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
 
-        await client.AuthenticateAsync(
-            fromEmail,
-            appPassword);
+        if (useAuthentication)
+        {
+          await client.AuthenticateAsync(
+            smtpUser,
+            smtpPassword!);
+        }
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);

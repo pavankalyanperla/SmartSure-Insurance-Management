@@ -19,6 +19,33 @@
       "UpstreamHttpMethod": [ "POST" ]
     },
     {
+      "DownstreamPathTemplate": "/api/auth/send-otp",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "localhost", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/send-otp",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/verify-register",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "localhost", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/verify-register",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/resend-otp",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "localhost", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/resend-otp",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
       "DownstreamPathTemplate": "/api/auth/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [

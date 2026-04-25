@@ -1,0 +1,87 @@
+<section class="page-content">
+  <div class="page-header"><h1>Initiate Claim</h1><a routerLink="/customer/claims" class="btn-view-light">Back</a></div>
+  <div class="steps-indicator">
+    <div [class]="step === 1 ? 'step-active' : 'step-inactive'">1. Select Policy</div>
+    <div [class]="step === 2 ? 'step-active' : 'step-inactive'">2. Upload Documents</div>
+    <div [class]="step === 3 ? 'step-active' : 'step-inactive'">3. Review & Submit</div>
+  </div>
+
+  @if (step === 1) {
+    <div class="form-card p-4">
+      <div class="form-group">
+        <label class="form-label">Active Policy</label>
+        <select class="form-input policy-select" [(ngModel)]="selectedPolicyId">
+          <option [ngValue]="null">Select active policy</option>
+          @for (policy of policies; track policy.id) {
+            <option [ngValue]="policy.id">{{ policy.policyNumber }} - {{ policy.policyTypeName }}</option>
+          }
+        </select>
+      </div>
+      <div class="grid">
+        <div class="col-12 md:col-4">
+          <label class="form-label">Incident Date</label>
+          <input class="form-input" type="date" [max]="todayDate" [(ngModel)]="incidentDate" />
+        </div>
+        <div class="col-12 md:col-8">
+          <label class="form-label">Description</label>
+          <textarea class="form-input" rows="4" [(ngModel)]="description"></textarea>
+          <small>{{ description.length }} characters</small>
+        </div>
+      </div>
+      <button class="btn-primary mt-3" (click)="createDraft()" [disabled]="isSubmitting">{{ isSubmitting ? 'Creating...' : 'Create Claim Draft' }}</button>
+    </div>
+  }
+
+  @if (step === 2) {
+    <div class="form-card p-4">
+      <h3>Upload Documents</h3>
+      <input class="form-input" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" (change)="handleFiles($event)">
+      <div class="docs-list mt-3">
+        @for (file of selectedFiles; track file.name) {
+          <div class="doc-item">
+            <div class="doc-icon">FILE</div>
+            <div class="doc-info">
+              <span class="doc-name">{{ file.name }}</span>
+              <span>{{ formatFileSize(file.size) }}</span>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button class="btn-view-light" (click)="previousStep()">Back</button>
+        <button class="btn-primary" (click)="uploadDocuments()" [disabled]="isUploading">{{ isUploading ? 'Uploading...' : 'Next' }}</button>
+      </div>
+    </div>
+  }
+
+  @if (step === 3) {
+    <div class="form-card p-4">
+      <h3>Review & Submit</h3>
+      <div class="grid">
+        <div class="col-12 md:col-4"><strong>Claim ID</strong><div>{{ draftClaim?.id }}</div></div>
+        <div class="col-12 md:col-4"><strong>Policy ID</strong><div>{{ draftClaim?.policyId }}</div></div>
+        <div class="col-12 md:col-4"><strong>Incident Date</strong><div>{{ incidentDate }}</div></div>
+        <div class="col-12"><strong>Description</strong><div>{{ description }}</div></div>
+      </div>
+      <h4 class="mt-3">Uploaded Documents</h4>
+      <div class="docs-list">
+        @for (doc of uploadedDocs; track doc.id) {
+          <div class="doc-item">
+            <div class="doc-icon">DOC</div>
+            <div class="doc-info">
+              <span class="doc-name">{{ doc.fileName }}</span>
+              <span>{{ formatFileSize(doc.fileSize) }}</span>
+            </div>
+          </div>
+        }
+      </div>
+      @if (uploadedDocs.length === 0) {
+        <div class="empty-state">No documents uploaded.</div>
+      }
+      <div class="flex gap-2 mt-3">
+        <button class="btn-view-light" (click)="previousStep()">Back</button>
+        <button class="btn-success" (click)="submitClaim()" [disabled]="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Claim' }}</button>
+      </div>
+    </div>
+  }
+</section>

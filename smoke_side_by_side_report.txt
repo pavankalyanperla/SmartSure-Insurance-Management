@@ -1,6 +1,6 @@
 === SIDE-BY-SIDE AUTHENTICATED FUNCTIONAL SMOKE ===
-Gateway: pass=24 fail=0
-Direct: pass=24 fail=0
+Gateway: pass=16 fail=8
+Direct: pass=17 fail=7
 Label|Gateway|Direct
 ---|---|---
 Admin claims list|200 (PASS)|200 (PASS)
@@ -13,20 +13,27 @@ Admin user status update (disable)|200 (PASS)|200 (PASS)
 Admin user status update (enable)|200 (PASS)|200 (PASS)
 Admin users list|200 (PASS)|200 (PASS)
 Auth login (admin)|200 (PASS)|200 (PASS)
-Auth register (customer)|200 (PASS)|200 (PASS)
-Claim create (customer)|200 (PASS)|200 (PASS)
-Claim status update (admin)|200 (PASS)|200 (PASS)
-Claim submit (customer)|200 (PASS)|200 (PASS)
+Auth register (customer)|202 (PASS)|202 (PASS)
+Claim create (customer)|401 (FAIL)|401 (FAIL)
+Claim status update (admin)|400 (FAIL)|400 (FAIL)
+Claim submit (customer)|401 (FAIL)|401 (FAIL)
 Claims admin list|200 (PASS)|200 (PASS)
 Identity admin update user status (disable)|200 (PASS)|200 (PASS)
 Identity admin update user status (enable)|200 (PASS)|200 (PASS)
 Identity admin users count|200 (PASS)|200 (PASS)
 Identity admin users list|200 (PASS)|200 (PASS)
-Identity profile (customer)|200 (PASS)|200 (PASS)
-Policy create (customer)|200 (PASS)|200 (PASS)
-Policy my list (customer)|200 (PASS)|200 (PASS)
-Policy premium calculate (customer)|200 (PASS)|200 (PASS)
-Policy types list|200 (PASS)|200 (PASS)
+Identity profile (customer)|401 (FAIL)|401 (FAIL)
+Policy create (customer)|401 (FAIL)|401 (FAIL)
+Policy my list (customer)|401 (FAIL)|401 (FAIL)
+Policy premium calculate (customer)|401 (FAIL)|401 (FAIL)
+Policy types list|401 (FAIL)|200 (PASS)
 
 === FAILURES ===
-None
+Claim create (customer) => Gateway:401, Direct:401
+Claim status update (admin) => Gateway:400, Direct:400
+Claim submit (customer) => Gateway:401, Direct:401
+Identity profile (customer) => Gateway:401, Direct:401
+Policy create (customer) => Gateway:401, Direct:401
+Policy my list (customer) => Gateway:401, Direct:401
+Policy premium calculate (customer) => Gateway:401, Direct:401
+Policy types list => Gateway:401, Direct:200

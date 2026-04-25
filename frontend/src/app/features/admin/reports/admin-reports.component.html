@@ -1,0 +1,44 @@
+<section class="page-content">
+  <div class="page-header"><h1>Reports</h1></div>
+  <div class="form-card p-4">
+    <h3>Generate New Report</h3>
+    <div class="flex gap-2 align-items-center flex-wrap">
+      <select class="form-input policy-select" [(ngModel)]="selectedReportType" style="width: 260px;">
+        @for (type of reportTypes; track type.value) {
+          <option [value]="type.value">{{ type.label }}</option>
+        }
+      </select>
+      <button class="btn-primary" (click)="generateReport()" [disabled]="isGenerating">{{ isGenerating ? 'Generating...' : 'Generate' }}</button>
+    </div>
+  </div>
+
+  @if (reportData && !isGenerating) {
+    <div class="form-card p-4 mt-4">
+      <h3>Report: {{ selectedReportType }} — {{ generatedAt | date:'medium' }}</h3>
+      <div class="grid mt-2">
+        @if (reportData['totalUsers'] !== undefined) {
+          <div class="col-12 md:col-4"><div class="stat-card blue"><div class="stat-value">{{ reportData['totalUsers'] }}</div><div class="stat-label">Total Users</div></div></div>
+        }
+        @if (reportData['totalPolicies'] !== undefined) {
+          <div class="col-12 md:col-4"><div class="stat-card green"><div class="stat-value">{{ reportData['totalPolicies'] }}</div><div class="stat-label">Total Policies</div></div></div>
+        }
+        @if (reportData['totalClaims'] !== undefined) {
+          <div class="col-12 md:col-4"><div class="stat-card orange"><div class="stat-value">{{ reportData['totalClaims'] }}</div><div class="stat-label">Total Claims</div></div></div>
+        }
+        @if (reportData['totalRevenue'] !== undefined) {
+          <div class="col-12 md:col-4"><div class="stat-card teal"><div class="stat-value">{{ +reportData['totalRevenue']! | currency:'INR':'symbol':'1.0-0' }}</div><div class="stat-label">Total Revenue</div></div></div>
+        }
+        @if (reportData['pendingClaims'] !== undefined) {
+          <div class="col-12 md:col-4"><div class="stat-card orange"><div class="stat-value">{{ reportData['pendingClaims'] }}</div><div class="stat-label">Pending Claims</div></div></div>
+        }
+        @if (reportData['approvedClaims'] !== undefined) {
+          <div class="col-12 md:col-4"><div class="stat-card green"><div class="stat-value">{{ reportData['approvedClaims'] }}</div><div class="stat-label">Approved Claims</div></div></div>
+        }
+        @if (reportData['rejectedClaims'] !== undefined) {
+          <div class="col-12 md:col-4"><div class="stat-card red"><div class="stat-value">{{ reportData['rejectedClaims'] }}</div><div class="stat-label">Rejected Claims</div></div></div>
+        }
+      </div>
+      <button class="btn-outline-primary mt-3" (click)="exportReport()">Export</button>
+    </div>
+  }
+</section>

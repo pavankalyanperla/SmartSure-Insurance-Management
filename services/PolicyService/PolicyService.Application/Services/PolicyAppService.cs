@@ -40,8 +40,11 @@ public class PolicyAppService : IPolicyService
         };
     }
 
-    public Task<PremiumResponseDto> CalculatePremiumAsync(PremiumCalculationDto dto)
+    public async Task<PremiumResponseDto> CalculatePremiumAsync(PremiumCalculationDto dto)
     {
+        var policyType = await _repo.GetPolicyTypeByIdAsync(dto.PolicyTypeId)
+            ?? throw new InvalidOperationException("Policy type not found.");
+
         var durationMonths = ((dto.EndDate.Year - dto.StartDate.Year) * 12)
                            + dto.EndDate.Month - dto.StartDate.Month;
 
@@ -61,16 +64,16 @@ public class PolicyAppService : IPolicyService
             _ => 1.2m
         };
 
-        decimal baseAmount = 5000m;
+        decimal baseAmount = policyType.BaseAmount;
         decimal finalAmount = baseAmount * ageFactor * durationFactor;
 
-        return Task.FromResult(new PremiumResponseDto
+        return new PremiumResponseDto
         {
             BaseAmount = baseAmount,
             AgeFactor = ageFactor,
             DurationFactor = durationFactor,
             FinalAmount = Math.Round(finalAmount, 2)
-        });
+        };
     }
 
     public async Task<PolicyResponseDto> CreatePolicyAsync(int userId, CreatePolicyDto dto)

@@ -44,8 +44,15 @@ public class PolicyController : ControllerBase
     [HttpPost("calculate-premium")]
     public async Task<IActionResult> CalculatePremium([FromBody] PremiumCalculationDto dto)
     {
-        var result = await _policyService.CalculatePremiumAsync(dto);
-        return Ok(result);
+        try
+        {
+            var result = await _policyService.CalculatePremiumAsync(dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost]

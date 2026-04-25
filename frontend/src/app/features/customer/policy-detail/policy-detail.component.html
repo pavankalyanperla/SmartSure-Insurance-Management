@@ -1,0 +1,66 @@
+<section class="page-content">
+  <div class="page-header"><a routerLink="/customer/policies" class="btn-view-light">Back</a></div>
+  @if (isLoading) {
+    <div class="loading-container">Loading policy...</div>
+  } @else if (policy) {
+    <div class="form-card p-4 mb-3">
+      <div class="flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h2 class="m-0">{{ policy.policyNumber }}</h2>
+          <p class="m-0 text-secondary">{{ policy.policyTypeName }}</p>
+        </div>
+        <span class="badge" [class]="'badge ' + statusClass(policy.status)">{{ policy.status }}</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="col-12 md:col-4"><div class="stat-card blue"><strong>Status</strong><h3>{{ policy.status }}</h3></div></div>
+      <div class="col-12 md:col-4"><div class="stat-card green"><strong>Premium Amount</strong><h3>{{ policy.premiumAmount | currency:'USD':'symbol':'1.0-0' }}</h3></div></div>
+      <div class="col-12 md:col-4"><div class="stat-card orange"><strong>Coverage Period</strong><h3>{{ policy.startDate | date:'mediumDate' }} - {{ policy.endDate | date:'mediumDate' }}</h3></div></div>
+    </div>
+
+    <div class="payment-card mt-4">
+      <h3>Payment</h3>
+      @if (payment) {
+        <div class="grid">
+          <div class="col-12 md:col-3"><strong>Status</strong><div>{{ payment.status }}</div></div>
+          <div class="col-12 md:col-3"><strong>Method</strong><div>{{ payment.paymentMethod }}</div></div>
+          <div class="col-12 md:col-3"><strong>Amount</strong><div>{{ payment.amount | currency:'USD':'symbol':'1.0-0' }}</div></div>
+          <div class="col-12 md:col-3"><strong>Transaction</strong><div>{{ payment.transactionId }}</div></div>
+        </div>
+      } @else {
+        <p>No payment record available.</p>
+      }
+    </div>
+
+    <div class="data-table-container mt-4">
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th>Claim Number</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (claim of relatedClaims; track claim.id) {
+            <tr>
+              <td>{{ claim.claimNumber }}</td>
+              <td><span class="badge" [class]="'badge ' + statusClass(claim.status)">{{ claim.status }}</span></td>
+              <td>{{ claim.createdAt | date:'medium' }}</td>
+              <td><a class="btn-view-light" [routerLink]="['/customer/claims', claim.id]">View</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (relatedClaims.length === 0) {
+        <div class="empty-state">No related claims yet.</div>
+      }
+    </div>
+
+    <div class="mt-4"><a class="btn-primary" routerLink="/customer/initiate-claim">File Claim</a></div>
+  } @else {
+    <div class="empty-state">Policy not found.</div>
+  }
+</section>

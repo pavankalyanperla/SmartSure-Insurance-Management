@@ -1,0 +1,74 @@
+<section class="page-content">
+  <div class="page-header"><h1>Buy Policy</h1><a routerLink="/customer/policies" class="btn-view-light">Back</a></div>
+  <div class="steps-indicator">
+    <div [class]="step === 1 ? 'step-active' : 'step-inactive'">1. Details</div>
+    <div [class]="step === 2 ? 'step-active' : 'step-inactive'">2. Premium</div>
+    <div [class]="step === 3 ? 'step-active' : 'step-inactive'">3. Confirm</div>
+  </div>
+
+  @if (step === 1) {
+    <div class="form-card p-4">
+      <div class="form-group">
+        <label class="form-label">Policy Type</label>
+        <select class="form-input policy-select" [(ngModel)]="policyTypeId" (ngModelChange)="onPolicyTypeChange()">
+          <option [ngValue]="null">Select policy type</option>
+          @for (type of policyTypes; track type.id) {
+            <option [ngValue]="type.id">{{ type.name }}</option>
+          }
+        </select>
+      </div>
+
+      @if (selectedPolicyType) {
+        <div class="policy-card mb-3">
+          <h3 class="m-0">{{ selectedPolicyType.name }}</h3>
+          <p>{{ selectedPolicyType.description }}</p>
+          <strong>Base Amount: {{ selectedPolicyType.baseAmount | currency:'USD':'symbol':'1.0-0' }}</strong>
+        </div>
+      }
+
+      <div class="grid">
+        <div class="col-12 md:col-4"><label class="form-label">Age</label><input class="form-input" type="number" min="18" max="100" [(ngModel)]="age"></div>
+        <div class="col-12 md:col-4"><label class="form-label">Start Date</label><input class="form-input" type="date" [(ngModel)]="startDate"></div>
+        <div class="col-12 md:col-4"><label class="form-label">End Date</label><input class="form-input" type="date" [(ngModel)]="endDate"></div>
+      </div>
+
+      <button class="btn-primary mt-3" (click)="calculatePremium()" [disabled]="isCalculating">{{ isCalculating ? 'Calculating...' : 'Calculate Premium' }}</button>
+    </div>
+  }
+
+  @if (step === 2) {
+    <div class="form-card p-4">
+      <h3>Premium Breakdown</h3>
+      <div class="grid">
+        <div class="col-12 md:col-3"><div class="stat-card blue"><strong>Base Amount</strong><h3>{{ baseAmountFromSelection | currency:'USD':'symbol':'1.0-0' }}</h3></div></div>
+        <div class="col-12 md:col-3"><div class="stat-card green"><strong>Age Factor</strong><h3>{{ ageFactor }}</h3></div></div>
+        <div class="col-12 md:col-3"><div class="stat-card orange"><strong>Duration Factor</strong><h3>{{ durationFactor }}</h3></div></div>
+        <div class="col-12 md:col-3"><div class="stat-card teal"><strong>Final Premium</strong><h3>{{ computedFinalPremium | currency:'USD':'symbol':'1.0-0' }}</h3></div></div>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button class="btn-view-light" (click)="previousStep()">Back</button>
+        <button class="btn-primary" (click)="continueToConfirm()">Confirm & Buy</button>
+      </div>
+    </div>
+  }
+
+  @if (step === 3) {
+    <div class="form-card p-4">
+      <h3>Confirm Purchase</h3>
+      <div class="grid">
+        <div class="col-12 md:col-6"><strong>Policy Type</strong><div>{{ selectedPolicyType?.name }}</div></div>
+        <div class="col-12 md:col-6"><strong>Base Amount</strong><div>{{ baseAmountFromSelection | currency:'USD':'symbol':'1.0-0' }}</div></div>
+        <div class="col-12 md:col-6"><strong>Age Factor</strong><div>{{ ageFactor }}</div></div>
+        <div class="col-12 md:col-6"><strong>Duration Factor</strong><div>{{ durationFactor }}</div></div>
+        <div class="col-12 md:col-6"><strong>Start Date</strong><div>{{ startDate | date:'mediumDate' }}</div></div>
+        <div class="col-12 md:col-6"><strong>End Date</strong><div>{{ endDate | date:'mediumDate' }}</div></div>
+        <div class="col-12"><strong>Final Premium</strong><h2 class="text-green-500">{{ computedFinalPremium | currency:'USD':'symbol':'1.0-0' }}</h2></div>
+      </div>
+      <p><strong>Payment:</strong> Online</p>
+      <div class="flex gap-2 mt-3">
+        <button class="btn-view-light" (click)="previousStep()">Back</button>
+        <button class="btn-success" (click)="payAndActivate()" [disabled]="isSubmitting">{{ isSubmitting ? 'Processing...' : 'Pay & Activate Policy' }}</button>
+      </div>
+    </div>
+  }
+</section>

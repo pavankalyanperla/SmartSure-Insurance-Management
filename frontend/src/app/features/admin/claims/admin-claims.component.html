@@ -1,0 +1,125 @@
+<section class="page-content">
+  <div class="page-header"><h1>Claims Management</h1><span class="badge badge-submitted">{{ filteredClaims.length }} Claims</span></div>
+
+  <div class="form-card p-4 mb-3">
+    <div class="grid">
+      <div class="col-12 md:col-3">
+        <label class="form-label">Status</label>
+        <select class="form-input policy-select" [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+          <option value="All">All</option>
+          <option value="Submitted">Submitted</option>
+          <option value="UnderReview">UnderReview</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </div>
+      <div class="col-12 md:col-3">
+        <label class="form-label">Customer</label>
+        <select class="form-input policy-select" [(ngModel)]="selectedCustomer" (ngModelChange)="applyFilters()">
+          <option value="All">All</option>
+          @for (user of customers; track user.userId) {
+            <option [value]="user.fullName">{{ user.fullName }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-12 md:col-6">
+        <label class="form-label">Search</label>
+        <input class="form-input" [(ngModel)]="searchText" (input)="applyFilters()" placeholder="Search claim # or description" />
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-container">Loading claims...</div>
+  } @else {
+    <div class="data-table-container">
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th>Claim #</th>
+            <th>Customer</th>
+            <th>Description</th>
+            <th>Incident Date</th>
+            <th>Status</th>
+            <th>Admin Note</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (claim of filteredClaims; track claim.claimId) {
+            <tr>
+              <td>{{ claim.claimNumber }}</td>
+              <td>{{ claim.customerName || 'Unknown' }}</td>
+              <td>{{ claim.description | slice:0:40 }}</td>
+              <td>{{ claim.incidentDate | date:'MMM d, yyyy' }}</td>
+              <td><span class="badge" [class]="'badge ' + statusClass(claim.status)">{{ claim.status }}</span></td>
+              <td><input class="form-input" [value]="claim.adminNote || ''" readonly></td>
+              <td>
+                @if (claim.status === 'Submitted' || claim.status === 'UnderReview') {
+                  <div class="flex gap-2">
+                    <button class="btn-review" (click)="openReviewPanel(claim)">Review</button>
+                    <button class="btn-success" (click)="approveClaim(claim.claimId)">Approve</button>
+                    <button class="btn-danger" (click)="rejectClaim(claim.claimId)">Reject</button>
+                  </div>
+                } @else {
+                  <span class="badge" [class]="'badge ' + statusClass(claim.status)">{{ claim.status }}</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (filteredClaims.length === 0) {
+      <div class="empty-state">No claims match the selected filters.</div>
+    }
+  }
+
+  @if (reviewPanelOpen && selectedClaim) {
+    <div class="review-overlay" (click)="closeReview()"></div>
+    <aside class="review-panel">
+      <div class="review-panel-header flex justify-content-between align-items-center">
+        <h3 class="m-0">Review {{ selectedClaim.claimNumber }}</h3>
+        <button class="btn-view-light" (click)="closeReview()">Close</button>
+      </div>
+
+      <section class="review-section">
+        <div class="review-info-row"><span class="review-label">Customer</span><span class="review-value">{{ selectedClaim.customerName }}</span></div>
+        <div class="review-info-row"><span class="review-label">Status</span><span class="review-value">{{ selectedClaim.status }}</span></div>
+        <div class="review-info-row"><span class="review-label">Incident Date</span><span class="review-value">{{ selectedClaim.incidentDate | date:'mediumDate' }}</span></div>
+        <p class="review-description">{{ selectedClaim.description }}</p>
+      </section>
+
+      <section class="review-section">
+        <h4>Uploaded Documents</h4>
+        @if ((selectedClaimDetails?.documents || []).length > 0) {
+          <div class="docs-list">
+            @for (doc of selectedClaimDetails?.documents || []; track doc.id) {
+              <div class="doc-item">
+                <div class="doc-icon">DOC</div>
+                <div class="doc-info"><span class="doc-name">{{ doc.fileName }}</span><span>{{ doc.fileType }} • {{ doc.fileSize }} bytes</span></div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">No documents uploaded.</div>
+        }
+      </section>
+
+      <section class="review-section">
+        <label class="form-label">Admin Comment</label>
+        <textarea class="review-textarea" rows="4" [(ngModel)]="adminNote"></textarea>
+      </section>
+
+      <section class="review-actions flex gap-2">
+        @if ((selectedClaim.status || '').toLowerCase() === 'submitted') {
+          <button class="btn-review" (click)="moveToUnderReview(selectedClaim)" [disabled]="actionLoading">Move to UnderReview</button>
+        }
+          <button class="btn-success" (click)="approveClaim(selectedClaim.claimId)" [disabled]="actionLoading">Approve</button>
+          <button class="btn-danger" (click)="rejectClaim(selectedClaim.claimId)" [disabled]="actionLoading">Reject</button>
+        <button class="btn-view-light" (click)="closeReview()">Cancel</button>
+      </section>
+    </aside>
+  }
+</section>

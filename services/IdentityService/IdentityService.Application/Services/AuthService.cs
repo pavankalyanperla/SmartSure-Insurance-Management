@@ -55,20 +55,8 @@ public class AuthService : IAuthService
         var otpCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         await _repository.UpsertOtpAsync(normalizedEmail, otpCode, DateTime.UtcNow.AddMinutes(15));
 
-        try
-        {
-            await _emailService.SendOtpEmailAsync(normalizedEmail, dto.FullName.Trim(), otpCode);
-            return new OtpSendResultDto { Message = "OTP sent to your email." };
-        }
-        catch
-        {
-            // Dev-friendly fallback if SMTP config is unavailable.
-            return new OtpSendResultDto
-            {
-                Message = "Email delivery is not configured. Use the OTP shown below for local testing.",
-                DevOtpCode = otpCode
-            };
-        }
+        await _emailService.SendOtpEmailAsync(normalizedEmail, dto.FullName.Trim(), otpCode);
+        return new OtpSendResultDto { Message = "OTP sent to your email." };
     }
 
     public async Task<AuthResponseDto> VerifyRegistrationOtpAsync(VerifyRegistrationRequestDto dto)

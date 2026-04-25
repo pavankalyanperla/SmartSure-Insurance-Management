@@ -1,0 +1,21 @@
+<div class="main-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><i class="pi pi-shield"></i> SmartSure Customer Portal</div>
+    <a routerLink="/customer/dashboard" routerLinkActive="active" class="nav-item"><i class="pi pi-home"></i> Dashboard</a>
+    <a routerLink="/customer/policies" routerLinkActive="active" class="nav-item"><i class="pi pi-file"></i> My Policies</a>
+    <a routerLink="/customer/claims" routerLinkActive="active" class="nav-item"><i class="pi pi-shield"></i> My Claims</a>
+    <a routerLink="/customer/buy-policy" routerLinkActive="active" class="nav-item"><i class="pi pi-plus"></i> Buy Policy</a>
+    <a routerLink="/customer/initiate-claim" routerLinkActive="active" class="nav-item"><i class="pi pi-send"></i> Initiate Claim</a>
+    <div class="sidebar-footer">
+      <div class="flex align-items-center gap-3 mb-3">
+        <div class="user-avatar">{{ userName.charAt(0) || 'U' }}</div>
+        <div class="user-info"><strong>{{ userName || 'Customer' }}</strong><span>Customer</span></div>
+      </div>
+      <button class="btn-outline w-full" (click)="logout()">Logout</button>
+    </div>
+  </aside>
+  <main class="flex-1">
+    <div class="topbar"><strong>Customer Portal</strong><span class="badge badge-customer">Authenticated</span></div>
+    <router-outlet></router-outlet>
+  </main>
+</div>

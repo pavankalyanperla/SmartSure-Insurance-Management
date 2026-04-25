@@ -1,0 +1,46 @@
+<section class="page-content">
+  <div class="page-header"><h1>Users</h1><span class="badge badge-customer">{{ users.length }} Users</span></div>
+
+  @if (isLoading) {
+    <div class="loading-container">Loading users...</div>
+  } @else {
+    <div class="data-table-container">
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th>Avatar</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Member Since</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.userId) {
+            <tr>
+              <td>
+                <div class="user-avatar-circle">
+                  {{ user.fullName.charAt(0).toUpperCase() || 'U' }}
+                </div>
+              </td>
+              <td>{{ user.fullName }}</td>
+              <td>{{ user.email }}</td>
+              <td><span class="badge" [class]="user.role === 'ADMIN' ? 'badge badge-admin' : 'badge badge-customer'">{{ user.role }}</span></td>
+              <td>{{ user.createdAt | date:'MMM d, yyyy' }}</td>
+              <td><span class="badge" [class]="user.isActive ? 'badge badge-active' : 'badge badge-rejected'">{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>
+              <td>
+                @if (user.isActive) {
+                  <button class="btn-danger" (click)="toggleStatus(user.userId, false)">Deactivate</button>
+                } @else {
+                  <button class="btn-success" (click)="toggleStatus(user.userId, true)">Activate</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

@@ -1,0 +1,25 @@
+<section class="page-content">
+  <div class="page-header"><h1>Admin Dashboard</h1></div>
+  @if (isLoading) {
+    <div class="loading-container">
+      <i class="pi pi-spin pi-spinner" style="font-size:2rem;color:#1a56db"></i>
+      <p>Loading dashboard...</p>
+    </div>
+  } @else {
+    <div class="grid">
+      <div class="col-12 md:col-3"><div class="stat-card blue"><div class="stat-icon"><i class="pi pi-users"></i></div><div class="stat-value">{{ dashboard.totalUsers || 0 }}</div><div class="stat-label">Total Users</div></div></div>
+      <div class="col-12 md:col-3"><div class="stat-card green"><div class="stat-icon"><i class="pi pi-file"></i></div><div class="stat-value">{{ dashboard.totalPolicies || 0 }}</div><div class="stat-label">Total Policies</div></div></div>
+      <div class="col-12 md:col-3"><div class="stat-card orange"><div class="stat-icon"><i class="pi pi-shield"></i></div><div class="stat-value">{{ dashboard.totalClaims || 0 }}</div><div class="stat-label">Total Claims</div></div></div>
+      <div class="col-12 md:col-3"><div class="stat-card teal"><div class="stat-icon"><i class="pi pi-dollar"></i></div><div class="stat-value">{{ dashboard.totalRevenue || 0 | currency:'INR':'symbol':'1.0-0' }}</div><div class="stat-label">Total Revenue</div></div></div>
+      <div class="col-12 md:col-4"><div class="stat-card orange"><div class="stat-value">{{ dashboard.pendingClaims || 0 }}</div><div class="stat-label">Pending Claims</div></div></div>
+      <div class="col-12 md:col-4"><div class="stat-card green"><div class="stat-value">{{ dashboard.approvedClaims || 0 }}</div><div class="stat-label">Approved Claims</div></div></div>
+      <div class="col-12 md:col-4"><div class="stat-card red"><div class="stat-value">{{ dashboard.rejectedClaims || 0 }}</div><div class="stat-label">Rejected Claims</div></div></div>
+    </div>
+
+    <div style="margin-top:2rem;display:flex;gap:12px;flex-wrap:wrap">
+      <a routerLink="/admin/claims" class="btn-primary"><i class="pi pi-file-check"></i> Review Claims</a>
+      <a routerLink="/admin/users" class="btn-outline-primary"><i class="pi pi-users"></i> Manage Users</a>
+      <a routerLink="/admin/reports" class="btn-outline-primary"><i class="pi pi-chart-pie"></i> Reports</a>
+    </div>
+  }
+</section>

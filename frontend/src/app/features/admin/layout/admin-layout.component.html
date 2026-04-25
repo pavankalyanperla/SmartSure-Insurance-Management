@@ -1,0 +1,21 @@
+<div class="main-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><i class="pi pi-shield"></i> SmartSure Admin Portal</div>
+    <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item"><i class="pi pi-chart-bar"></i> Dashboard</a>
+    <a routerLink="/admin/claims" routerLinkActive="active" class="nav-item"><i class="pi pi-file-check"></i> Claims</a>
+    <a routerLink="/admin/users" routerLinkActive="active" class="nav-item"><i class="pi pi-users"></i> Users</a>
+    <a routerLink="/admin/reports" routerLinkActive="active" class="nav-item"><i class="pi pi-chart-pie"></i> Reports</a>
+    <a routerLink="/admin/policies" routerLinkActive="active" class="nav-item"><i class="pi pi-shield"></i> Policy Management</a>
+    <div class="sidebar-footer">
+      <div class="flex align-items-center gap-3 mb-3">
+        <div class="user-avatar">{{ userName.charAt(0) || 'A' }}</div>
+        <div class="user-info"><strong>{{ userName || 'Admin' }}</strong><span>Administrator</span></div>
+      </div>
+      <button class="btn-outline w-full" (click)="logout()">Logout</button>
+    </div>
+  </aside>
+  <main class="flex-1">
+    <div class="topbar"><strong>Admin Portal</strong><span class="badge badge-admin">Role: ADMIN</span></div>
+    <router-outlet></router-outlet>
+  </main>
+</div>

@@ -1,0 +1,45 @@
+<section class="page-content">
+  <div class="page-header"><div><h1>Welcome back, {{ userName || 'Customer' }}!</h1><p class="text-secondary">Your policies and claims at a glance.</p></div></div>
+  @if (isLoading) {
+    <div class="loading-container">Loading dashboard...</div>
+  } @else {
+  <div class="grid">
+    <div class="col-12 md:col-3"><div class="stat-card blue"><strong>Total Policies</strong><h2>{{ totalPolicies }}</h2></div></div>
+    <div class="col-12 md:col-3"><div class="stat-card green"><strong>Active Policies</strong><h2>{{ activePolicies }}</h2></div></div>
+    <div class="col-12 md:col-3"><div class="stat-card orange"><strong>Total Claims</strong><h2>{{ totalClaims }}</h2></div></div>
+    <div class="col-12 md:col-3"><div class="stat-card purple"><strong>Pending Claims</strong><h2>{{ pendingClaims }}</h2></div></div>
+  </div>
+
+  <div class="data-table-container mt-4">
+    <table class="w-full">
+      <thead>
+        <tr>
+          <th>Policy Number</th>
+          <th>Type</th>
+          <th>Premium</th>
+          <th>Status</th>
+          <th>Dates</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (policy of recentPolicies; track policy.id) {
+          <tr>
+            <td>{{ policy.policyNumber }}</td>
+            <td>{{ policy.policyTypeName }}</td>
+            <td>{{ policy.premiumAmount | currency:'USD':'symbol':'1.0-0' }}</td>
+            <td><span class="badge" [class]="'badge ' + statusClass(policy.status)">{{ policy.status }}</span></td>
+            <td>{{ policy.startDate | date:'mediumDate' }} - {{ policy.endDate | date:'mediumDate' }}</td>
+            <td><a class="btn-view-light" [routerLink]="['/customer/policies', policy.id]">View</a></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    @if (recentPolicies.length === 0) {
+      <div class="empty-state">No policies found yet.</div>
+    }
+  </div>
+
+  <div class="form-card p-4 mt-4"><h3>Quick Actions</h3><div class="flex gap-3 flex-wrap"><a routerLink="/customer/buy-policy" class="btn-primary">Buy New Policy</a><a routerLink="/customer/initiate-claim" class="btn-outline-primary">File a Claim</a></div></div>
+  }
+</section>

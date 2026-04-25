@@ -31,22 +31,26 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var result = await _authService.RegisterAsync(dto);
-            
-            // Get the created user and generate token
-            var user = await _repository.GetByEmailAsync(dto.Email.ToLower());
-            if (user is not null)
+            var sendOtpResult = await _authService.SendRegistrationOtpAsync(new SendOtpRequestDto
             {
-                var (token, expiresAt) = _jwtHelper.GenerateToken(user);
-                result.Token = token;
-                result.ExpiresAt = expiresAt;
-            }
-            
-            return Ok(result);
+                FullName = dto.FullName,
+                Email = dto.Email
+            });
+
+            return Accepted(new
+            {
+                message = sendOtpResult.Message,
+                requiresOtpVerification = true,
+                devOtpCode = sendOtpResult.DevOtpCode
+            });
         }
         catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to send OTP email.", detail = ex.Message });
         }
     }
 
@@ -61,6 +65,10 @@ public class AuthController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to send OTP email.", detail = ex.Message });
         }
     }
 
@@ -81,6 +89,10 @@ public class AuthController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return Conflict(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to resend OTP email.", detail = ex.Message });
         }
     }
 

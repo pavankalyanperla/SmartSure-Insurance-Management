@@ -1,0 +1,106 @@
+<section class="page-content">
+  <div class="page-header"><h1>Policy Management</h1><button class="btn-primary" (click)="openCreate()">Create New Policy</button></div>
+
+  <div class="grid mb-3">
+    <div class="col-12 md:col-6"><div class="stat-card blue"><strong>Total Types</strong><h2>{{ policies.length }}</h2></div></div>
+    <div class="col-12 md:col-6"><div class="stat-card green"><strong>Active</strong><h2>{{ activeCount }}</h2></div></div>
+  </div>
+
+  <div class="form-card p-4 mb-3">
+    <div class="grid">
+      <div class="col-12 md:col-8"><input class="form-input" [(ngModel)]="search" (input)="applyFilters()" placeholder="Search policy types"></div>
+      <div class="col-12 md:col-4">
+        <select class="form-input policy-select" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+          <option value="All">All</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-container">Loading policy types...</div>
+  } @else {
+    <div class="grid">
+      @for (policy of filteredPolicies; track policy.id) {
+        <div class="col-12 md:col-6">
+          <article class="policy-card">
+            <div class="policy-card-header">
+              <div>
+                <h3 class="m-0">{{ policy.name }}</h3>
+                <span class="badge" [class]="policy.isActive ? 'badge badge-active' : 'badge badge-rejected'">{{ policy.isActive ? 'Active' : 'Inactive' }}</span>
+              </div>
+              <div class="flex gap-2">
+                <button class="icon-btn blue" (click)="openStats(policy)"><i class="pi pi-chart-line"></i></button>
+                <button class="icon-btn green" (click)="openEdit(policy)"><i class="pi pi-pencil"></i></button>
+                <button class="icon-btn orange" (click)="togglePolicy(policy)"><i class="pi pi-sync"></i></button>
+                <button class="icon-btn red" (click)="deletePolicy(policy)"><i class="pi pi-trash"></i></button>
+              </div>
+            </div>
+            <p>{{ policy.description }}</p>
+            <div class="policy-details-grid">
+              <div><strong>Base Amount</strong><div>{{ policy.baseAmount | currency:'USD':'symbol':'1.0-0' }}</div></div>
+              <div><strong>Duration</strong><div>{{ policy.durationMonths }} months</div></div>
+              <div><strong>Age Range</strong><div>{{ policy.minAge }} - {{ policy.maxAge }}</div></div>
+              <div><strong>Risk</strong><div>{{ policy.riskCategory }}</div></div>
+              <div><strong>Claim Limit</strong><div>{{ policy.claimLimit | currency:'USD':'symbol':'1.0-0' }}</div></div>
+              <div><strong>Auto Renewal</strong><div>{{ policy.autoRenewal ? 'Yes' : 'No' }}</div></div>
+            </div>
+            <p class="mt-3"><strong>Enrolled:</strong> {{ policy.enrolledCount || 0 }}</p>
+          </article>
+        </div>
+      }
+    </div>
+  }
+
+  @if (createOpen || editOpen || statsOpen) {
+    <div class="review-overlay" (click)="closePanels()"></div>
+    <aside class="review-panel">
+      <div class="review-panel-header flex justify-content-between align-items-center">
+        <h3 class="m-0">
+          @if (createOpen) { Create Policy Type }
+          @if (editOpen) { Edit Policy Type }
+          @if (statsOpen) { Policy Stats }
+        </h3>
+        <button class="btn-view-light" (click)="closePanels()">Close</button>
+      </div>
+
+      @if (createOpen || editOpen) {
+        <section class="review-section">
+          <div class="form-group"><label class="form-label">Name</label><input class="form-input" [(ngModel)]="form.name"></div>
+          <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" rows="3" [(ngModel)]="form.description"></textarea></div>
+          <div class="form-group"><label class="form-label">Base Amount</label><input class="form-input" type="number" [(ngModel)]="form.baseAmount"></div>
+          <div class="form-group"><label class="form-label">Coverage Details</label><textarea class="form-input" rows="3" [(ngModel)]="form.coverageDetails"></textarea></div>
+          <div class="grid">
+            <div class="col-6"><label class="form-label">Duration (months)</label><input class="form-input" type="number" [(ngModel)]="form.durationMonths"></div>
+            <div class="col-6"><label class="form-label">Risk Category</label><input class="form-input" [(ngModel)]="form.riskCategory"></div>
+            <div class="col-6"><label class="form-label">Min Age</label><input class="form-input" type="number" [(ngModel)]="form.minAge"></div>
+            <div class="col-6"><label class="form-label">Max Age</label><input class="form-input" type="number" [(ngModel)]="form.maxAge"></div>
+            <div class="col-6"><label class="form-label">Claim Limit</label><input class="form-input" type="number" [(ngModel)]="form.claimLimit"></div>
+            <div class="col-6"><label class="form-label">Waiting Period</label><input class="form-input" type="number" [(ngModel)]="form.waitingPeriod"></div>
+            <div class="col-6"><label class="form-label">Grace Period Days</label><input class="form-input" type="number" [(ngModel)]="form.gracePeriodDays"></div>
+            <div class="col-6"><label class="form-label">Auto Renewal</label><select class="form-input policy-select" [(ngModel)]="form.autoRenewal"><option [ngValue]="true">Yes</option><option [ngValue]="false">No</option></select></div>
+          </div>
+          <div class="form-group"><label class="form-label">Exclusions</label><textarea class="form-input" rows="3" [(ngModel)]="form.exclusions"></textarea></div>
+        </section>
+        <section class="review-actions flex gap-2">
+          @if (createOpen) {
+            <button class="btn-primary" (click)="createPolicy()">Create</button>
+          }
+          @if (editOpen) {
+            <button class="btn-primary" (click)="updatePolicy()">Save Changes</button>
+          }
+          <button class="btn-view-light" (click)="closePanels()">Cancel</button>
+        </section>
+      }
+
+      @if (statsOpen) {
+        <section class="review-section">
+          <h4>{{ selectedPolicy?.name }}</h4>
+          <pre>{{ statsData | json }}</pre>
+        </section>
+      }
+    </aside>
+  }
+</section>

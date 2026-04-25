@@ -1,0 +1,48 @@
+<section class="page-content">
+  <div class="page-header">
+    <h1>My Policies</h1>
+    <div class="flex gap-2 align-items-center">
+      <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilter()" class="policy-select form-input" style="width: 200px;">
+        <option value="All">All Statuses</option>
+        <option value="Active">Active</option>
+        <option value="Expired">Expired</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+      <a routerLink="/customer/buy-policy" class="btn-primary">Buy New Policy</a>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-container">Loading policies...</div>
+  } @else {
+    <div class="data-table-container">
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th>Policy Number</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Premium</th>
+            <th>Dates</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (policy of filteredPolicies; track policy.id) {
+            <tr>
+              <td>{{ policy.policyNumber }}</td>
+              <td>{{ policy.policyTypeName }}</td>
+              <td><span class="badge" [class]="'badge ' + statusClass(policy.status)">{{ policy.status }}</span></td>
+              <td>{{ policy.premiumAmount | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td>{{ policy.startDate | date:'mediumDate' }} - {{ policy.endDate | date:'mediumDate' }}</td>
+              <td><a class="btn-view-light" [routerLink]="['/customer/policies', policy.id]">View</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (filteredPolicies.length === 0) {
+      <div class="empty-state">No policies found for this filter.</div>
+    }
+  }
+</section>

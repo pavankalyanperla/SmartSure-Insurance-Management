@@ -1,0 +1,52 @@
+<section class="page-content">
+  <div class="page-header"><a routerLink="/customer/claims" class="btn-view-light">Back</a></div>
+  @if (isLoading) {
+    <div class="loading-container">Loading claim...</div>
+  } @else if (claim) {
+    <div class="form-card p-4 mb-3">
+      <div class="flex justify-content-between align-items-center flex-wrap gap-3">
+        <h2 class="m-0">{{ claim.claimNumber }}</h2>
+        <span class="badge" [class]="'badge ' + statusClass(claim.status)">{{ claim.status }}</span>
+      </div>
+      <div class="grid mt-3">
+        <div class="col-12 md:col-4"><strong>Policy ID</strong><div>{{ claim.policyId }}</div></div>
+        <div class="col-12 md:col-4"><strong>Incident Date</strong><div>{{ claim.incidentDate | date:'mediumDate' }}</div></div>
+        <div class="col-12 md:col-4"><strong>Description</strong><div>{{ claim.description }}</div></div>
+      </div>
+    </div>
+
+    <div class="timeline-card mb-3">
+      <h3>Timeline</h3>
+      <div class="grid">
+        <div class="col-12 md:col-4"><strong>Created</strong><div>{{ claim.createdAt | date:'medium' }}</div></div>
+        <div class="col-12 md:col-4"><strong>Last Updated</strong><div>{{ (claim.updatedAt || claim.createdAt) | date:'medium' }}</div></div>
+        <div class="col-12 md:col-4"><strong>Current Stage</strong><div>{{ claim.status }}</div></div>
+      </div>
+    </div>
+
+    <div class="form-card p-4">
+      <h3>Documents</h3>
+      @if ((claim.documents || []).length > 0) {
+        <div class="docs-list">
+          @for (doc of claim.documents || []; track doc.id) {
+            <div class="doc-item">
+              <div class="doc-icon">{{ fileIcon(doc.fileType) }}</div>
+              <div class="doc-info">
+                <span class="doc-name">{{ doc.fileName }}</span>
+                <span>{{ doc.fileSize }} bytes • {{ doc.uploadedAt | date:'medium' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">No documents uploaded.</div>
+      }
+    </div>
+
+    @if ((claim.status || '').toLowerCase() === 'draft') {
+      <div class="mt-4"><button class="btn-primary" (click)="submitClaim()" [disabled]="isSubmitting">{{ isSubmitting ? 'Submitting...' : 'Submit Claim' }}</button></div>
+    }
+  } @else {
+    <div class="empty-state">Claim not found.</div>
+  }
+</section>

@@ -1,25 +1,168 @@
 <section class="page-content">
-  <div class="page-header"><h1>Admin Dashboard</h1></div>
+  <div class="dash-page-header">
+    <div>
+      <h1 class="dash-title">Admin Dashboard</h1>
+      <p class="dash-subtitle">SmartSure Insurance &mdash; Platform Overview</p>
+    </div>
+  </div>
+
   @if (isLoading) {
     <div class="loading-container">
-      <i class="pi pi-spin pi-spinner" style="font-size:2rem;color:#1a56db"></i>
-      <p>Loading dashboard...</p>
+      <i class="pi pi-spin pi-spinner" style="font-size:2.5rem;color:#1a56db"></i>
+      <p style="margin-top:.75rem;font-weight:600;color:#6b7280">Loading dashboard...</p>
+    </div>
+  } @else if (errorMessage) {
+    <div class="empty-state">
+      <p>{{ errorMessage }}</p>
+      <button class="btn-primary" (click)="loadDashboard()">Retry</button>
     </div>
   } @else {
-    <div class="grid">
-      <div class="col-12 md:col-3"><div class="stat-card blue"><div class="stat-icon"><i class="pi pi-users"></i></div><div class="stat-value">{{ dashboard.totalUsers || 0 }}</div><div class="stat-label">Total Users</div></div></div>
-      <div class="col-12 md:col-3"><div class="stat-card green"><div class="stat-icon"><i class="pi pi-file"></i></div><div class="stat-value">{{ dashboard.totalPolicies || 0 }}</div><div class="stat-label">Total Policies</div></div></div>
-      <div class="col-12 md:col-3"><div class="stat-card orange"><div class="stat-icon"><i class="pi pi-shield"></i></div><div class="stat-value">{{ dashboard.totalClaims || 0 }}</div><div class="stat-label">Total Claims</div></div></div>
-      <div class="col-12 md:col-3"><div class="stat-card teal"><div class="stat-icon"><i class="pi pi-dollar"></i></div><div class="stat-value">{{ dashboard.totalRevenue || 0 | currency:'INR':'symbol':'1.0-0' }}</div><div class="stat-label">Total Revenue</div></div></div>
-      <div class="col-12 md:col-4"><div class="stat-card orange"><div class="stat-value">{{ dashboard.pendingClaims || 0 }}</div><div class="stat-label">Pending Claims</div></div></div>
-      <div class="col-12 md:col-4"><div class="stat-card green"><div class="stat-value">{{ dashboard.approvedClaims || 0 }}</div><div class="stat-label">Approved Claims</div></div></div>
-      <div class="col-12 md:col-4"><div class="stat-card red"><div class="stat-value">{{ dashboard.rejectedClaims || 0 }}</div><div class="stat-label">Rejected Claims</div></div></div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-top">
+          <div class="kpi-icon-wrap"><i class="pi pi-users"></i></div>
+          <span class="kpi-tag">Total</span>
+        </div>
+        <div class="kpi-value">{{ dashboard.totalUsers }}</div>
+        <div class="kpi-label">Registered Users</div>
+        <div class="kpi-sub">Platform members</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <div class="kpi-top">
+          <div class="kpi-icon-wrap"><i class="pi pi-user-plus"></i></div>
+          <span class="kpi-tag">Active</span>
+        </div>
+        <div class="kpi-value">{{ dashboard.activeUsers }}</div>
+        <div class="kpi-label">Active Users</div>
+        <div class="kpi-sub">{{ dashboard.inactiveUsers }} inactive</div>
+      </div>
+      <div class="kpi-card kpi-purple">
+        <div class="kpi-top">
+          <div class="kpi-icon-wrap"><i class="pi pi-file"></i></div>
+          <span class="kpi-tag">Issued</span>
+        </div>
+        <div class="kpi-value">{{ dashboard.totalPolicies }}</div>
+        <div class="kpi-label">Active Policies</div>
+        <div class="kpi-sub">Insurance policies</div>
+      </div>
+      <div class="kpi-card kpi-orange">
+        <div class="kpi-top">
+          <div class="kpi-icon-wrap"><i class="pi pi-shield"></i></div>
+          <span class="kpi-tag">All time</span>
+        </div>
+        <div class="kpi-value">{{ dashboard.totalClaims }}</div>
+        <div class="kpi-label">Total Claims</div>
+        <div class="kpi-sub">{{ dashboard.pendingClaims }} awaiting review</div>
+      </div>
+      <div class="kpi-card kpi-teal">
+        <div class="kpi-top">
+          <div class="kpi-icon-wrap"><i class="pi pi-dollar"></i></div>
+          <span class="kpi-tag">Revenue</span>
+        </div>
+        <div class="kpi-value">{{ dashboard.totalRevenue | currency:'INR':'symbol':'1.0-0' }}</div>
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-sub">Premium collections</div>
+      </div>
     </div>
 
-    <div style="margin-top:2rem;display:flex;gap:12px;flex-wrap:wrap">
-      <a routerLink="/admin/claims" class="btn-primary"><i class="pi pi-file-check"></i> Review Claims</a>
-      <a routerLink="/admin/users" class="btn-outline-primary"><i class="pi pi-users"></i> Manage Users</a>
-      <a routerLink="/admin/reports" class="btn-outline-primary"><i class="pi pi-chart-pie"></i> Reports</a>
+    <!-- Charts: User Activity | Claims Doughnut | Platform Overview -->
+    <div class="charts-row-3">
+      <!-- Users Bar Chart -->
+      <div class="chart-card">
+        <div class="chart-card-head">
+          <h3>User Activity</h3>
+          <span class="badge badge-active">Live data</span>
+        </div>
+        <p-chart type="bar" [data]="usersChart" [options]="barChartOptions" height="220"></p-chart>
+        <div class="donut-legend" style="margin-top:.75rem">
+          <div class="dl-item"><span class="dl-dot" style="background:#3b82f6"></span><span>Total</span><strong>{{ dashboard.totalUsers }}</strong></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#10b981"></span><span>Active</span><strong>{{ dashboard.activeUsers }}</strong></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#ef4444"></span><span>Inactive</span><strong>{{ dashboard.inactiveUsers }}</strong></div>
+        </div>
+      </div>
+
+      <!-- Doughnut -->
+      <div class="chart-card">
+        <div class="chart-card-head">
+          <h3>Claims Status</h3>
+          <span class="badge badge-submitted">{{ dashboard.totalClaims }} total</span>
+        </div>
+        <div class="donut-wrap">
+          <p-chart type="doughnut" [data]="claimStatusChart" [options]="chartOptions" height="200"></p-chart>
+        </div>
+        <div class="donut-legend">
+          <div class="dl-item"><span class="dl-dot" style="background:#f59e0b"></span><span>Pending</span><strong>{{ dashboard.pendingClaims }}</strong></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#10b981"></span><span>Approved</span><strong>{{ dashboard.approvedClaims }}</strong></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#ef4444"></span><span>Rejected</span><strong>{{ dashboard.rejectedClaims }}</strong></div>
+          <div class="dl-item"><span class="dl-dot" style="background:#6b7280"></span><span>Closed</span><strong>{{ dashboard.closedClaims }}</strong></div>
+        </div>
+      </div>
+
+      <!-- Platform Overview Bar -->
+      <div class="chart-card">
+        <div class="chart-card-head">
+          <h3>Platform Overview</h3>
+          <span class="badge badge-active">Live data</span>
+        </div>
+        <p-chart type="bar" [data]="overviewChart" [options]="barChartOptions" height="220"></p-chart>
+      </div>
+    </div>
+
+    <!-- Claim Status Tiles + Quick Actions -->
+    <div class="bottom-row">
+      <div class="status-tiles">
+        <h3 style="margin:0 0 1rem;font-size:1rem;font-weight:700">Claim Breakdown</h3>
+        <div class="tile-grid">
+          <div class="status-tile tile-pending">
+            <i class="pi pi-clock" style="font-size:1.4rem"></i>
+            <div class="tile-val">{{ dashboard.pendingClaims }}</div>
+            <div class="tile-lbl">Pending</div>
+          </div>
+          <div class="status-tile tile-approved">
+            <i class="pi pi-check-circle" style="font-size:1.4rem"></i>
+            <div class="tile-val">{{ dashboard.approvedClaims }}</div>
+            <div class="tile-lbl">Approved</div>
+          </div>
+          <div class="status-tile tile-rejected">
+            <i class="pi pi-times-circle" style="font-size:1.4rem"></i>
+            <div class="tile-val">{{ dashboard.rejectedClaims }}</div>
+            <div class="tile-lbl">Rejected</div>
+          </div>
+          <div class="status-tile tile-closed">
+            <i class="pi pi-lock" style="font-size:1.4rem"></i>
+            <div class="tile-val">{{ dashboard.closedClaims }}</div>
+            <div class="tile-lbl">Closed</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-actions-card">
+        <h3 style="margin:0 0 1rem;font-size:1rem;font-weight:700">Quick Actions</h3>
+        <div class="qa-grid">
+          <a routerLink="/admin/claims" class="qa-btn qa-blue">
+            <i class="pi pi-file-check" style="font-size:1.6rem"></i>
+            <span class="qa-label">Review Claims</span>
+            <small>{{ dashboard.pendingClaims }} pending</small>
+          </a>
+          <a routerLink="/admin/users" class="qa-btn qa-purple">
+            <i class="pi pi-users" style="font-size:1.6rem"></i>
+            <span class="qa-label">Manage Users</span>
+            <small>{{ dashboard.totalUsers }} members</small>
+          </a>
+          <a routerLink="/admin/policies" class="qa-btn qa-orange">
+            <i class="pi pi-file" style="font-size:1.6rem"></i>
+            <span class="qa-label">Policies</span>
+            <small>{{ dashboard.totalPolicies }} issued</small>
+          </a>
+          <a routerLink="/admin/reports" class="qa-btn qa-green">
+            <i class="pi pi-chart-pie" style="font-size:1.6rem"></i>
+            <span class="qa-label">Reports</span>
+            <small>Analytics</small>
+          </a>
+        </div>
+      </div>
     </div>
   }
 </section>

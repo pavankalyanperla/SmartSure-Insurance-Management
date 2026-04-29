@@ -4,6 +4,7 @@ export interface ClaimDocument {
   fileType: string;
   fileSize: number;
   uploadedAt: string;
+  fileUrl?: string;
 }
 
 export interface Claim {

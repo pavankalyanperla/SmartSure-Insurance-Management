@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnDestroy, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -16,11 +16,14 @@ export class RegisterComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ngZone = inject(NgZone);
 
   isStep1 = true;
   isStep2 = false;
   isSending = false;
   isVerifying = false;
+  isResending = false;
   errorMessage = '';
   successMessage = '';
   otpCode = '';
@@ -31,6 +34,8 @@ export class RegisterComponent implements OnDestroy {
   email = '';
   password = '';
   confirmPassword = '';
+  showPassword = false;
+  showConfirmPassword = false;
 
   sendOtp(): void {
     this.errorMessage = '';
@@ -65,19 +70,21 @@ export class RegisterComponent implements OnDestroy {
         password: this.password
       })
       .subscribe({
-      next: (response) => {
-        console.log('OTP sent:', response);
-        this.isSending = false;
-        this.isStep1 = false;
-        this.isStep2 = true;
-        this.successMessage = 'OTP sent successfully. Please verify to continue.';
-        this.startTimer();
+      next: () => {
+        this.ngZone.run(() => {
+          this.isSending = false;
+          this.isStep1 = false;
+          this.isStep2 = true;
+          this.successMessage = 'OTP sent successfully. Please verify to continue.';
+          this.startTimer();
+        });
       },
       error: (error) => {
-        console.error('Send OTP error:', error);
-        this.errorMessage = error?.error?.message || error?.error || 'Failed to send OTP. Please try again.';
-        this.isSending = false;
-        this.messageService.add({ severity: 'error', summary: 'OTP failed', detail: this.errorMessage });
+        this.ngZone.run(() => {
+          this.errorMessage = error?.error?.message || error?.error || 'Failed to send OTP. Please try again.';
+          this.isSending = false;
+          this.messageService.add({ severity: 'error', summary: 'OTP failed', detail: this.errorMessage });
+        });
       }
     });
   }
@@ -92,38 +99,49 @@ export class RegisterComponent implements OnDestroy {
     this.isVerifying = true;
     this.authService.verifyOtpAndRegister({
       email: this.email,
-      otpCode: this.otpCode
+      otpCode: this.otpCode,
+      fullName: this.fullName,
+      password: this.password
     }).subscribe({
-      next: (response) => {
-        console.log('Verified:', response);
-        if (this.timerInterval) {
-          clearInterval(this.timerInterval);
-          this.timerInterval = null;
-        }
-        this.isVerifying = false;
-        void this.router.navigate(['/customer/dashboard']);
+      next: () => {
+        this.ngZone.run(() => {
+          if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+          }
+          this.isVerifying = false;
+          void this.router.navigate(['/customer/dashboard']);
+        });
       },
       error: (error) => {
-        console.error('Verify OTP error:', error);
-        this.errorMessage = error?.error?.message || 'Invalid OTP. Please try again.';
-        this.isVerifying = false;
-        this.messageService.add({ severity: 'error', summary: 'Verification failed', detail: this.errorMessage });
+        this.ngZone.run(() => {
+          this.errorMessage = error?.error?.message || 'Invalid OTP. Please try again.';
+          this.isVerifying = false;
+          this.messageService.add({ severity: 'error', summary: 'Verification failed', detail: this.errorMessage });
+        });
       }
     });
   }
 
   resendOtp(): void {
-    if (!this.email) {
-      return;
-    }
+    if (!this.email || this.isResending) return;
+
+    this.isResending = true;
+    this.cdr.detectChanges();
 
     this.authService.resendOtp(this.email).subscribe({
       next: () => {
+        this.isResending = false;
         this.timeLeft = 900;
         this.startTimer();
         this.messageService.add({ severity: 'success', summary: 'OTP resent', detail: 'A fresh OTP has been sent to your email.' });
+        this.cdr.detectChanges();
       },
-      error: (error) => this.messageService.add({ severity: 'error', summary: 'Resend failed', detail: error?.error?.message || 'Could not resend OTP' })
+      error: (error) => {
+        this.isResending = false;
+        this.messageService.add({ severity: 'error', summary: 'Resend failed', detail: error?.error?.message || 'Could not resend OTP' });
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -150,7 +168,15 @@ export class RegisterComponent implements OnDestroy {
         clearInterval(this.timerInterval);
         this.timerInterval = null;
       }
+      this.cdr.detectChanges();
     }, 1000);
+  }
+
+  toTitleCase(name: string): string {
+    return name.trim().replace(/\s+/g, ' ')
+      .split(' ')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
   }
 
   formatTime(seconds: number): string {

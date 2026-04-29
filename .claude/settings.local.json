@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx ng *)",
+      "Bash(powershell -Command \"Get-Process -Name 'AdminService.API' -ErrorAction SilentlyContinue | Select-Object Id, StartTime, CPU\")",
+      "Bash(powershell -Command \"Get-Process -Name 'node','ng' -ErrorAction SilentlyContinue | Select-Object Id, StartTime, CommandLine\")"
+    ]
+  }
+}

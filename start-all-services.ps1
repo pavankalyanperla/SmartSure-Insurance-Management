@@ -1,7 +1,3 @@
-param(
-    [switch]$NoBuild
-)
-
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -41,26 +37,12 @@ foreach ($service in $services) {
         throw "Project not found: $projectPath"
     }
 
-    $runArgs = @(
-        "run"
-        "--project"
-        "`"$projectPath`""
-        "--urls"
-        $service.Url
-        "--environment"
-        "Development"
-    )
-
-    if ($NoBuild) {
-        $runArgs += "--no-build"
-    }
-
-    $command = "dotnet " + ($runArgs -join " ")
+    $command = "dotnet run --project `"$projectPath`" --urls $($service.Url) --environment Development"
 
     Start-Process -FilePath "powershell" -ArgumentList "-NoExit", "-Command", $command -WorkingDirectory $root | Out-Null
 
     Write-Host "[STARTED] $($service.Name) -> $($service.Url)"
 }
 
-Write-Host "All services are starting in separate terminals."
+Write-Host "All services are starting in separate terminals (with rebuild)."
 Write-Host "Use Ctrl+C in each terminal window to stop a service."

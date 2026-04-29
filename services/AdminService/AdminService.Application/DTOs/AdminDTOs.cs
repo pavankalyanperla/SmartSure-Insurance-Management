@@ -3,6 +3,8 @@ namespace AdminService.Application.DTOs;
 public class DashboardSummaryDto
 {
     public int TotalUsers { get; set; }
+    public int ActiveUsers { get; set; }
+    public int InactiveUsers { get; set; }
     public int TotalPolicies { get; set; }
     public int TotalClaims { get; set; }
     public int PendingClaims { get; set; }
@@ -21,6 +23,7 @@ public class ClaimReviewDto
     public DateTime IncidentDate { get; set; }
     public string Description { get; set; } = null!;
     public string Status { get; set; } = null!;
+    public string? AdminNote { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

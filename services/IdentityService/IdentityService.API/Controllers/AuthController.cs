@@ -178,8 +178,9 @@ public class AuthController : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> GetUsersCount()
     {
-        var count = await _authService.GetUsersCountAsync();
-        return Ok(new { totalUsers = count });
+        var total  = await _authService.GetUsersCountAsync();
+        var active = await _authService.GetActiveUsersCountAsync();
+        return Ok(new { totalUsers = total, activeUsers = active, inactiveUsers = total - active });
     }
 
     [HttpPut("admin/users/{userId}/status")]
@@ -207,5 +208,41 @@ public class AuthController : ControllerBase
         };
 
         return Ok(result);
+    }
+
+    [HttpPost("forgot-password/send-otp")]
+    public async Task<IActionResult> ForgotPasswordSendOtp([FromBody] ForgotPasswordSendOtpDto dto)
+    {
+        try
+        {
+            var result = await _authService.SendPasswordResetOtpAsync(dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to send reset OTP.", detail = ex.Message });
+        }
+    }
+
+    [HttpPost("forgot-password/reset")]
+    public async Task<IActionResult> ForgotPasswordReset([FromBody] ResetPasswordDto dto)
+    {
+        try
+        {
+            await _authService.ResetPasswordAsync(dto);
+            return Ok(new { message = "Password reset successfully. You can now log in with your new password." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Failed to reset password.", detail = ex.Message });
+        }
     }
 }

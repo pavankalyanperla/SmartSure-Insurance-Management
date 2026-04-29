@@ -1,13 +1,13 @@
 import {
-  BaseStyle,
-  N,
-  PrimeNG,
-  S,
-  base
+  BaseComponent,
+  Bind,
+  BindModule,
+  PARENT_INSTANCE
+} from "./chunk-HACIXF2V.js";
+import {
+  BaseStyle
 } from "./chunk-KLERYROU.js";
 import {
-  C,
-  F,
   MessageService,
   P,
   PrimeTemplate,
@@ -15,49 +15,35 @@ import {
   SharedModule,
   W,
   _t,
-  a,
-  c,
   f,
-  g,
-  k,
   l,
-  m,
   oe,
   qt,
-  s2 as s,
-  s3 as s2,
+  s3 as s,
   te,
-  w,
-  w2
+  w
 } from "./chunk-ZD5QBI7S.js";
 import {
   CommonModule,
   NgClass,
   NgForOf,
   NgIf,
-  NgTemplateOutlet,
-  isPlatformServer
+  NgTemplateOutlet
 } from "./chunk-FURFMX5P.js";
 import "./chunk-FSQM67WS.js";
 import {
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
   ContentChild,
   ContentChildren,
-  DOCUMENT,
   Directive,
-  ElementRef,
   EventEmitter,
   Injectable,
   InjectionToken,
-  Injector,
   Input,
   NgModule,
   NgZone,
   Output,
-  PLATFORM_ID,
-  Renderer2,
   ViewEncapsulation,
   afterRenderEffect,
   booleanAttribute,
@@ -72,7 +58,6 @@ import {
   untracked,
   ɵɵHostDirectivesFeature,
   ɵɵInheritDefinitionFeature,
-  ɵɵNgOnChangesFeature,
   ɵɵProvidersFeature,
   ɵɵadvance,
   ɵɵattribute,
@@ -119,713 +104,9 @@ import {
 import "./chunk-RSS3ODKE.js";
 import {
   __async,
-  __objRest,
   __spreadProps,
   __spreadValues
 } from "./chunk-WDMUDEB6.js";
-
-// node_modules/primeng/fesm2022/primeng-basecomponent.mjs
-var BaseComponentStyle = class _BaseComponentStyle extends BaseStyle {
-  name = "common";
-  static ɵfac = /* @__PURE__ */ (() => {
-    let ɵBaseComponentStyle_BaseFactory;
-    return function BaseComponentStyle_Factory(__ngFactoryType__) {
-      return (ɵBaseComponentStyle_BaseFactory || (ɵBaseComponentStyle_BaseFactory = ɵɵgetInheritedFactory(_BaseComponentStyle)))(__ngFactoryType__ || _BaseComponentStyle);
-    };
-  })();
-  static ɵprov = ɵɵdefineInjectable({
-    token: _BaseComponentStyle,
-    factory: _BaseComponentStyle.ɵfac,
-    providedIn: "root"
-  });
-};
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(BaseComponentStyle, [{
-    type: Injectable,
-    args: [{
-      providedIn: "root"
-    }]
-  }], null, null);
-})();
-var PARENT_INSTANCE = new InjectionToken("PARENT_INSTANCE");
-var BaseComponent = class _BaseComponent {
-  document = inject(DOCUMENT);
-  platformId = inject(PLATFORM_ID);
-  el = inject(ElementRef);
-  injector = inject(Injector);
-  cd = inject(ChangeDetectorRef);
-  renderer = inject(Renderer2);
-  config = inject(PrimeNG);
-  $parentInstance = inject(PARENT_INSTANCE, {
-    optional: true,
-    skipSelf: true
-  }) ?? void 0;
-  baseComponentStyle = inject(BaseComponentStyle);
-  baseStyle = inject(BaseStyle);
-  scopedStyleEl;
-  parent = this.$params.parent;
-  cn = f;
-  _themeScopedListener;
-  themeChangeListenerMap = /* @__PURE__ */ new Map();
-  /******************** Inputs ********************/
-  /**
-   * Defines scoped design tokens of the component.
-   * @defaultValue undefined
-   * @group Props
-   */
-  dt = input(...ngDevMode ? [void 0, {
-    debugName: "dt"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  /**
-   * Indicates whether the component should be rendered without styles.
-   * @defaultValue undefined
-   * @group Props
-   */
-  unstyled = input(...ngDevMode ? [void 0, {
-    debugName: "unstyled"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  /**
-   * Used to pass attributes to DOM elements inside the component.
-   * @defaultValue undefined
-   * @group Props
-   */
-  pt = input(...ngDevMode ? [void 0, {
-    debugName: "pt"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  /**
-   * Used to configure passthrough(pt) options of the component.
-   * @group Props
-   * @defaultValue undefined
-   */
-  ptOptions = input(...ngDevMode ? [void 0, {
-    debugName: "ptOptions"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  /******************** Computed ********************/
-  $attrSelector = s2("pc");
-  get $name() {
-    return this["componentName"] || "UnknownComponent";
-  }
-  get $hostName() {
-    return this["hostName"];
-  }
-  get $el() {
-    return this.el?.nativeElement;
-  }
-  directivePT = signal(void 0, ...ngDevMode ? [{
-    debugName: "directivePT"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  directiveUnstyled = signal(void 0, ...ngDevMode ? [{
-    debugName: "directiveUnstyled"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  $unstyled = computed(() => {
-    return this.unstyled() ?? this.directiveUnstyled() ?? this.config?.unstyled() ?? false;
-  }, ...ngDevMode ? [{
-    debugName: "$unstyled"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  $pt = computed(() => {
-    return m(this.pt() || this.directivePT(), this.$params);
-  }, ...ngDevMode ? [{
-    debugName: "$pt"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  get $globalPT() {
-    return this._getPT(this.config?.pt(), void 0, (value) => m(value, this.$params));
-  }
-  get $defaultPT() {
-    return this._getPT(this.config?.pt(), void 0, (value) => this._getOptionValue(value, this.$hostName || this.$name, this.$params) || m(value, this.$params));
-  }
-  get $style() {
-    return __spreadValues(__spreadValues({
-      theme: void 0,
-      css: void 0,
-      classes: void 0,
-      inlineStyles: void 0
-    }, (this._getHostInstance(this) || {}).$style), this["_componentStyle"]);
-  }
-  get $styleOptions() {
-    return {
-      nonce: this.config?.csp().nonce
-    };
-  }
-  get $params() {
-    const parentInstance = this._getHostInstance(this) || this.$parentInstance;
-    return {
-      instance: this,
-      parent: {
-        instance: parentInstance
-      }
-    };
-  }
-  /******************** Lifecycle Hooks ********************/
-  onInit() {
-  }
-  onChanges(changes) {
-  }
-  onDoCheck() {
-  }
-  onAfterContentInit() {
-  }
-  onAfterContentChecked() {
-  }
-  onAfterViewInit() {
-  }
-  onAfterViewChecked() {
-  }
-  onDestroy() {
-  }
-  /******************** Angular Lifecycle Hooks ********************/
-  constructor() {
-    effect((onCleanup) => {
-      if (this.document && !isPlatformServer(this.platformId)) {
-        if (this.dt()) {
-          this._loadScopedThemeStyles(this.dt());
-          this._themeScopedListener = () => this._loadScopedThemeStyles(this.dt());
-          this._themeChangeListener("_themeScopedListener", this._themeScopedListener);
-        } else {
-          this._unloadScopedThemeStyles();
-        }
-      }
-      onCleanup(() => {
-        this._offThemeChangeListener("_themeScopedListener");
-      });
-    });
-    effect((onCleanup) => {
-      if (this.document && !isPlatformServer(this.platformId)) {
-        if (!this.$unstyled()) {
-          this._loadCoreStyles();
-          this._themeChangeListener("_loadCoreStyles", this._loadCoreStyles);
-        }
-      }
-      onCleanup(() => {
-        this._offThemeChangeListener("_loadCoreStyles");
-      });
-    });
-    this._hook("onBeforeInit");
-  }
-  /**
-   * ⚠ Do not override ngOnInit!
-   *
-   * Use 'onInit()' in subclasses instead.
-   */
-  ngOnInit() {
-    this._loadCoreStyles();
-    this._loadStyles();
-    this.onInit();
-    this._hook("onInit");
-  }
-  /**
-   * ⚠ Do not override ngOnChanges!
-   *
-   * Use 'onChanges(changes: SimpleChanges)' in subclasses instead.
-   */
-  ngOnChanges(changes) {
-    this.onChanges(changes);
-    this._hook("onChanges", changes);
-  }
-  /**
-   * ⚠ Do not override ngDoCheck!
-   *
-   * Use 'onDoCheck()' in subclasses instead.
-   */
-  ngDoCheck() {
-    this.onDoCheck();
-    this._hook("onDoCheck");
-  }
-  /**
-   * ⚠ Do not override ngAfterContentInit!
-   *
-   * Use 'onAfterContentInit()' in subclasses instead.
-   */
-  ngAfterContentInit() {
-    this.onAfterContentInit();
-    this._hook("onAfterContentInit");
-  }
-  /**
-   * ⚠ Do not override ngAfterContentChecked!
-   *
-   * Use 'onAfterContentChecked()' in subclasses instead.
-   */
-  ngAfterContentChecked() {
-    this.onAfterContentChecked();
-    this._hook("onAfterContentChecked");
-  }
-  /**
-   * ⚠ Do not override ngAfterViewInit!
-   *
-   * Use 'onAfterViewInit()' in subclasses instead.
-   */
-  ngAfterViewInit() {
-    this.$el?.setAttribute(this.$attrSelector, "");
-    this.onAfterViewInit();
-    this._hook("onAfterViewInit");
-  }
-  /**
-   * ⚠ Do not override ngAfterViewChecked!
-   *
-   * Use 'onAfterViewChecked()' in subclasses instead.
-   */
-  ngAfterViewChecked() {
-    this.onAfterViewChecked();
-    this._hook("onAfterViewChecked");
-  }
-  /**
-   * ⚠ Do not override ngOnDestroy!
-   *
-   * Use 'onDestroy()' in subclasses instead.
-   */
-  ngOnDestroy() {
-    this._removeThemeListeners();
-    this._unloadScopedThemeStyles();
-    this.onDestroy();
-    this._hook("onDestroy");
-  }
-  /******************** Methods ********************/
-  _mergeProps(fn, ...args) {
-    return c(fn) ? fn(...args) : w2(...args);
-  }
-  _getHostInstance(instance) {
-    return instance ? this.$hostName ? this.$name === this.$hostName ? instance : this._getHostInstance(instance.$parentInstance) : instance.$parentInstance : void 0;
-  }
-  _getPropValue(name) {
-    return this[name] || this._getHostInstance(this)?.[name];
-  }
-  _getOptionValue(options, key = "", params = {}) {
-    return F(options, key, params);
-  }
-  _hook(hookName, ...args) {
-    if (!this.$hostName) {
-      const selfHook = this._usePT(this._getPT(this.$pt(), this.$name), this._getOptionValue, `hooks.${hookName}`);
-      const defaultHook = this._useDefaultPT(this._getOptionValue, `hooks.${hookName}`);
-      selfHook?.(...args);
-      defaultHook?.(...args);
-    }
-  }
-  /********** Load Styles **********/
-  _load() {
-    if (!base.isStyleNameLoaded("base")) {
-      this.baseStyle.loadBaseCSS(this.$styleOptions);
-      this._loadGlobalStyles();
-      base.setLoadedStyleName("base");
-    }
-    this._loadThemeStyles();
-  }
-  _loadStyles() {
-    this._load();
-    this._themeChangeListener("_load", () => this._load());
-  }
-  _loadGlobalStyles() {
-    const globalCSS = this._useGlobalPT(this._getOptionValue, "global.css", this.$params);
-    s(globalCSS) && this.baseStyle.load(globalCSS, __spreadValues({
-      name: "global"
-    }, this.$styleOptions));
-  }
-  _loadCoreStyles() {
-    if (!base.isStyleNameLoaded(this.$style?.name) && this.$style?.name) {
-      this.baseComponentStyle.loadCSS(this.$styleOptions);
-      this.$style.loadCSS(this.$styleOptions);
-      base.setLoadedStyleName(this.$style.name);
-    }
-  }
-  _loadThemeStyles() {
-    if (this.$unstyled() || this.config?.theme() === "none") return;
-    if (!S.isStyleNameLoaded("common")) {
-      const {
-        primitive,
-        semantic,
-        global,
-        style: style3
-      } = this.$style?.getCommonTheme?.() || {};
-      this.baseStyle.load(primitive?.css, __spreadValues({
-        name: "primitive-variables"
-      }, this.$styleOptions));
-      this.baseStyle.load(semantic?.css, __spreadValues({
-        name: "semantic-variables"
-      }, this.$styleOptions));
-      this.baseStyle.load(global?.css, __spreadValues({
-        name: "global-variables"
-      }, this.$styleOptions));
-      this.baseStyle.loadBaseStyle(__spreadValues({
-        name: "global-style"
-      }, this.$styleOptions), style3);
-      S.setLoadedStyleName("common");
-    }
-    if (!S.isStyleNameLoaded(this.$style?.name) && this.$style?.name) {
-      const {
-        css: css2,
-        style: style3
-      } = this.$style?.getComponentTheme?.() || {};
-      this.$style?.load(css2, __spreadValues({
-        name: `${this.$style?.name}-variables`
-      }, this.$styleOptions));
-      this.$style?.loadStyle(__spreadValues({
-        name: `${this.$style?.name}-style`
-      }, this.$styleOptions), style3);
-      S.setLoadedStyleName(this.$style?.name);
-    }
-    if (!S.isStyleNameLoaded("layer-order")) {
-      const layerOrder = this.$style?.getLayerOrderThemeCSS?.();
-      this.baseStyle.load(layerOrder, __spreadValues({
-        name: "layer-order",
-        first: true
-      }, this.$styleOptions));
-      S.setLoadedStyleName("layer-order");
-    }
-  }
-  _loadScopedThemeStyles(preset) {
-    const {
-      css: css2
-    } = this.$style?.getPresetTheme?.(preset, `[${this.$attrSelector}]`) || {};
-    const scopedStyle = this.$style?.load(css2, __spreadValues({
-      name: `${this.$attrSelector}-${this.$style?.name}`
-    }, this.$styleOptions));
-    this.scopedStyleEl = scopedStyle?.el;
-  }
-  _unloadScopedThemeStyles() {
-    this.scopedStyleEl?.remove();
-  }
-  _themeChangeListener(id, callback = () => {
-  }) {
-    this._offThemeChangeListener(id);
-    base.clearLoadedStyleNames();
-    const hold = callback.bind(this);
-    this.themeChangeListenerMap.set(id, hold);
-    N.on("theme:change", hold);
-  }
-  _removeThemeListeners() {
-    this._offThemeChangeListener("_themeScopedListener");
-    this._offThemeChangeListener("_loadCoreStyles");
-    this._offThemeChangeListener("_load");
-  }
-  _offThemeChangeListener(id) {
-    if (this.themeChangeListenerMap.has(id)) {
-      N.off("theme:change", this.themeChangeListenerMap.get(id));
-      this.themeChangeListenerMap.delete(id);
-    }
-  }
-  /********** Passthrough **********/
-  _getPTValue(obj = {}, key = "", params = {}, searchInDefaultPT = true) {
-    const searchOut = /./g.test(key) && !!params[key.split(".")[0]];
-    const {
-      mergeSections = true,
-      mergeProps: useMergeProps = false
-    } = this._getPropValue("ptOptions")?.() || this.config?.["ptOptions"]?.() || {};
-    const global = searchInDefaultPT ? searchOut ? this._useGlobalPT(this._getPTClassValue, key, params) : this._useDefaultPT(this._getPTClassValue, key, params) : void 0;
-    const self = searchOut ? void 0 : this._usePT(this._getPT(obj, this.$hostName || this.$name), this._getPTClassValue, key, __spreadProps(__spreadValues({}, params), {
-      global: global || {}
-    }));
-    const datasets = this._getPTDatasets(key);
-    return mergeSections || !mergeSections && self ? useMergeProps ? this._mergeProps(useMergeProps, global, self, datasets) : __spreadValues(__spreadValues(__spreadValues({}, global), self), datasets) : __spreadValues(__spreadValues({}, self), datasets);
-  }
-  _getPTDatasets(key = "") {
-    const datasetPrefix = "data-pc-";
-    const isExtended = key === "root" && s(this.$pt()?.["data-pc-section"]);
-    return key !== "transition" && __spreadProps(__spreadValues({}, key === "root" && __spreadProps(__spreadValues({
-      [`${datasetPrefix}name`]: g(isExtended ? this.$pt()?.["data-pc-section"] : this.$name)
-    }, isExtended && {
-      [`${datasetPrefix}extend`]: g(this.$name)
-    }), {
-      [`${this.$attrSelector}`]: ""
-      // @todo - use `data-pc-id: this.$attrSelector` instead.
-    })), {
-      [`${datasetPrefix}section`]: g(key.includes(".") ? key.split(".").at(-1) ?? "" : key)
-    });
-  }
-  _getPTClassValue(options, key, params) {
-    const value = this._getOptionValue(options, key, params);
-    return a(value) || C(value) ? {
-      class: value
-    } : value;
-  }
-  _getPT(pt, key = "", callback) {
-    const getValue = (value, checkSameKey = false) => {
-      const computedValue = callback ? callback(value) : value;
-      const _key = g(key);
-      const _cKey = g(this.$hostName || this.$name);
-      return (checkSameKey ? _key !== _cKey ? computedValue?.[_key] : void 0 : computedValue?.[_key]) ?? computedValue;
-    };
-    return pt?.hasOwnProperty("_usept") ? {
-      _usept: pt["_usept"],
-      originalValue: getValue(pt.originalValue),
-      value: getValue(pt.value)
-    } : getValue(pt, true);
-  }
-  _usePT(pt, callback, key, params) {
-    const fn = (value) => callback?.call(this, value, key, params);
-    if (pt?.hasOwnProperty("_usept")) {
-      const {
-        mergeSections = true,
-        mergeProps: useMergeProps = false
-      } = pt["_usept"] || this.config?.["ptOptions"]() || {};
-      const originalValue = fn(pt.originalValue);
-      const value = fn(pt.value);
-      if (originalValue === void 0 && value === void 0) return void 0;
-      else if (a(value)) return value;
-      else if (a(originalValue)) return originalValue;
-      return mergeSections || !mergeSections && value ? useMergeProps ? this._mergeProps(useMergeProps, originalValue, value) : __spreadValues(__spreadValues({}, originalValue), value) : value;
-    }
-    return fn(pt);
-  }
-  _useGlobalPT(callback, key, params) {
-    return this._usePT(this.$globalPT, callback, key, params);
-  }
-  _useDefaultPT(callback, key, params) {
-    return this._usePT(this.$defaultPT, callback, key, params);
-  }
-  /******************** Exposed API ********************/
-  ptm(key = "", params = {}) {
-    return this._getPTValue(this.$pt(), key, __spreadValues(__spreadValues({}, this.$params), params));
-  }
-  ptms(keys, params = {}) {
-    return keys.reduce((acc, arg) => {
-      acc = w2(acc, this.ptm(arg, params)) || {};
-      return acc;
-    }, {});
-  }
-  ptmo(obj = {}, key = "", params = {}) {
-    return this._getPTValue(obj, key, __spreadValues({
-      instance: this
-    }, params), false);
-  }
-  cx(key, params = {}) {
-    return !this.$unstyled() ? f(this._getOptionValue(this.$style.classes, key, __spreadValues(__spreadValues({}, this.$params), params))) : void 0;
-  }
-  sx(key = "", when = true, params = {}) {
-    if (when) {
-      const self = this._getOptionValue(this.$style.inlineStyles, key, __spreadValues(__spreadValues({}, this.$params), params));
-      const base2 = this._getOptionValue(this.baseComponentStyle.inlineStyles, key, __spreadValues(__spreadValues({}, this.$params), params));
-      return __spreadValues(__spreadValues({}, base2), self);
-    }
-    return void 0;
-  }
-  static ɵfac = function BaseComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _BaseComponent)();
-  };
-  static ɵdir = ɵɵdefineDirective({
-    type: _BaseComponent,
-    inputs: {
-      dt: [1, "dt"],
-      unstyled: [1, "unstyled"],
-      pt: [1, "pt"],
-      ptOptions: [1, "ptOptions"]
-    },
-    features: [ɵɵProvidersFeature([BaseComponentStyle, BaseStyle]), ɵɵNgOnChangesFeature]
-  });
-};
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(BaseComponent, [{
-    type: Directive,
-    args: [{
-      standalone: true,
-      providers: [BaseComponentStyle, BaseStyle]
-    }]
-  }], () => [], {
-    dt: [{
-      type: Input,
-      args: [{
-        isSignal: true,
-        alias: "dt",
-        required: false
-      }]
-    }],
-    unstyled: [{
-      type: Input,
-      args: [{
-        isSignal: true,
-        alias: "unstyled",
-        required: false
-      }]
-    }],
-    pt: [{
-      type: Input,
-      args: [{
-        isSignal: true,
-        alias: "pt",
-        required: false
-      }]
-    }],
-    ptOptions: [{
-      type: Input,
-      args: [{
-        isSignal: true,
-        alias: "ptOptions",
-        required: false
-      }]
-    }]
-  });
-})();
-
-// node_modules/primeng/fesm2022/primeng-bind.mjs
-var Bind = class _Bind {
-  el;
-  renderer;
-  /**
-   * Dynamic attributes, properties, and event listeners to be applied to the host element.
-   * @group Props
-   */
-  pBind = input(void 0, ...ngDevMode ? [{
-    debugName: "pBind"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  _attrs = signal(void 0, ...ngDevMode ? [{
-    debugName: "_attrs"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  attrs = computed(() => this._attrs() || this.pBind(), ...ngDevMode ? [{
-    debugName: "attrs"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  styles = computed(() => this.attrs()?.style, ...ngDevMode ? [{
-    debugName: "styles"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  classes = computed(() => f(this.attrs()?.class), ...ngDevMode ? [{
-    debugName: "classes"
-  }] : (
-    /* istanbul ignore next */
-    []
-  ));
-  listeners = [];
-  constructor(el, renderer) {
-    this.el = el;
-    this.renderer = renderer;
-    effect(() => {
-      const _a = this.attrs() || {}, {
-        style: style3,
-        class: className
-      } = _a, rest = __objRest(_a, [
-        "style",
-        "class"
-      ]);
-      for (const [key, value] of Object.entries(rest)) {
-        if (key.startsWith("on") && typeof value === "function") {
-          const eventName = key.slice(2).toLowerCase();
-          if (!this.listeners.some((l2) => l2.eventName === eventName)) {
-            const unlisten = this.renderer.listen(this.el.nativeElement, eventName, value);
-            this.listeners.push({
-              eventName,
-              unlisten
-            });
-          }
-        } else if (value === null || value === void 0) {
-          this.renderer.removeAttribute(this.el.nativeElement, key);
-        } else {
-          this.renderer.setAttribute(this.el.nativeElement, key, value.toString());
-          if (key in this.el.nativeElement) {
-            this.el.nativeElement[key] = value;
-          }
-        }
-      }
-    });
-  }
-  ngOnDestroy() {
-    this.clearListeners();
-  }
-  setAttrs(attrs) {
-    if (!k(this._attrs(), attrs)) {
-      this._attrs.set(attrs);
-    }
-  }
-  clearListeners() {
-    this.listeners.forEach(({
-      unlisten
-    }) => unlisten());
-    this.listeners = [];
-  }
-  static ɵfac = function Bind_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _Bind)(ɵɵdirectiveInject(ElementRef), ɵɵdirectiveInject(Renderer2));
-  };
-  static ɵdir = ɵɵdefineDirective({
-    type: _Bind,
-    selectors: [["", "pBind", ""]],
-    hostVars: 4,
-    hostBindings: function Bind_HostBindings(rf, ctx) {
-      if (rf & 2) {
-        ɵɵstyleMap(ctx.styles());
-        ɵɵclassMap(ctx.classes());
-      }
-    },
-    inputs: {
-      pBind: [1, "pBind"]
-    }
-  });
-};
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(Bind, [{
-    type: Directive,
-    args: [{
-      selector: "[pBind]",
-      standalone: true,
-      host: {
-        "[style]": "styles()",
-        "[class]": "classes()"
-      }
-    }]
-  }], () => [{
-    type: ElementRef
-  }, {
-    type: Renderer2
-  }], {
-    pBind: [{
-      type: Input,
-      args: [{
-        isSignal: true,
-        alias: "pBind",
-        required: false
-      }]
-    }]
-  });
-})();
-var BindModule = class _BindModule {
-  static ɵfac = function BindModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _BindModule)();
-  };
-  static ɵmod = ɵɵdefineNgModule({
-    type: _BindModule,
-    imports: [Bind],
-    exports: [Bind]
-  });
-  static ɵinj = ɵɵdefineInjector({});
-};
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(BindModule, [{
-    type: NgModule,
-    args: [{
-      imports: [Bind],
-      exports: [Bind]
-    }]
-  }], null, null);
-})();
 
 // node_modules/primeng/fesm2022/primeng-icons-baseicon.mjs
 var _c0 = ["*"];
@@ -1311,7 +592,7 @@ var _c010 = ["data-p-icon", "arrow-down"];
 var ArrowDownIcon = class _ArrowDownIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵArrowDownIcon_BaseFactory;
@@ -1460,7 +741,7 @@ var _c013 = ["data-p-icon", "arrow-left"];
 var ArrowLeftIcon = class _ArrowLeftIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵArrowLeftIcon_BaseFactory;
@@ -1569,7 +850,7 @@ var _c015 = ["data-p-icon", "arrow-up"];
 var ArrowUpIcon = class _ArrowUpIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵArrowUpIcon_BaseFactory;
@@ -1634,7 +915,7 @@ var _c016 = ["data-p-icon", "ban"];
 var BanIcon = class _BanIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵBanIcon_BaseFactory;
@@ -2114,7 +1395,7 @@ var _c027 = ["data-p-icon", "exclamation-triangle"];
 var ExclamationTriangleIcon = class _ExclamationTriangleIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵExclamationTriangleIcon_BaseFactory;
@@ -2229,7 +1510,7 @@ var _c029 = ["data-p-icon", "eyeslash"];
 var EyeSlashIcon = class _EyeSlashIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵEyeSlashIcon_BaseFactory;
@@ -2294,7 +1575,7 @@ var _c030 = ["data-p-icon", "filter"];
 var FilterIcon = class _FilterIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵFilterIcon_BaseFactory;
@@ -2357,7 +1638,7 @@ var _c031 = ["data-p-icon", "filter-slash"];
 var FilterSlashIcon = class _FilterSlashIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵFilterSlashIcon_BaseFactory;
@@ -2422,7 +1703,7 @@ var _c032 = ["data-p-icon", "home"];
 var HomeIcon = class _HomeIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵHomeIcon_BaseFactory;
@@ -2487,7 +1768,7 @@ var _c033 = ["data-p-icon", "info-circle"];
 var InfoCircleIcon = class _InfoCircleIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵInfoCircleIcon_BaseFactory;
@@ -2594,7 +1875,7 @@ var _c035 = ["data-p-icon", "pencil"];
 var PencilIcon = class _PencilIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵPencilIcon_BaseFactory;
@@ -2657,7 +1938,7 @@ var _c036 = ["data-p-icon", "plus"];
 var PlusIcon = class _PlusIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵPlusIcon_BaseFactory;
@@ -2720,7 +2001,7 @@ var _c037 = ["data-p-icon", "refresh"];
 var RefreshIcon = class _RefreshIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵRefreshIcon_BaseFactory;
@@ -2785,7 +2066,7 @@ var _c038 = ["data-p-icon", "search"];
 var SearchIcon = class _SearchIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵSearchIcon_BaseFactory;
@@ -2850,7 +2131,7 @@ var _c039 = ["data-p-icon", "search-minus"];
 var SearchMinusIcon = class _SearchMinusIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵSearchMinusIcon_BaseFactory;
@@ -2915,7 +2196,7 @@ var _c040 = ["data-p-icon", "search-plus"];
 var SearchPlusIcon = class _SearchPlusIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵSearchPlusIcon_BaseFactory;
@@ -2980,7 +2261,7 @@ var _c041 = ["data-p-icon", "sort-alt"];
 var SortAltIcon = class _SortAltIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵSortAltIcon_BaseFactory;
@@ -3049,7 +2330,7 @@ var _c042 = ["data-p-icon", "sort-amount-down"];
 var SortAmountDownIcon = class _SortAmountDownIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵSortAmountDownIcon_BaseFactory;
@@ -3112,7 +2393,7 @@ var _c043 = ["data-p-icon", "sort-amount-up-alt"];
 var SortAmountUpAltIcon = class _SortAmountUpAltIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵSortAmountUpAltIcon_BaseFactory;
@@ -3175,7 +2456,7 @@ var _c044 = ["data-p-icon", "spinner"];
 var SpinnerIcon = class _SpinnerIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵSpinnerIcon_BaseFactory;
@@ -3238,7 +2519,7 @@ var _c045 = ["data-p-icon", "star"];
 var StarIcon = class _StarIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵStarIcon_BaseFactory;
@@ -3301,7 +2582,7 @@ var _c046 = ["data-p-icon", "star-fill"];
 var StarFillIcon = class _StarFillIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵStarFillIcon_BaseFactory;
@@ -3364,7 +2645,7 @@ var _c047 = ["data-p-icon", "th-large"];
 var ThLargeIcon = class _ThLargeIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵThLargeIcon_BaseFactory;
@@ -3471,7 +2752,7 @@ var _c049 = ["data-p-icon", "times-circle"];
 var TimesCircleIcon = class _TimesCircleIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵTimesCircleIcon_BaseFactory;
@@ -3536,7 +2817,7 @@ var _c050 = ["data-p-icon", "trash"];
 var TrashIcon = class _TrashIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵTrashIcon_BaseFactory;
@@ -3601,7 +2882,7 @@ var _c051 = ["data-p-icon", "undo"];
 var UndoIcon = class _UndoIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵUndoIcon_BaseFactory;
@@ -3666,7 +2947,7 @@ var _c052 = ["data-p-icon", "upload"];
 var UploadIcon = class _UploadIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵUploadIcon_BaseFactory;
@@ -3731,7 +3012,7 @@ var _c053 = ["data-p-icon", "window-maximize"];
 var WindowMaximizeIcon = class _WindowMaximizeIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵWindowMaximizeIcon_BaseFactory;
@@ -3796,7 +3077,7 @@ var _c054 = ["data-p-icon", "window-minimize"];
 var WindowMinimizeIcon = class _WindowMinimizeIcon extends BaseIcon {
   pathId;
   onInit() {
-    this.pathId = "url(#" + s2() + ")";
+    this.pathId = "url(#" + s() + ")";
   }
   static ɵfac = /* @__PURE__ */ (() => {
     let ɵWindowMinimizeIcon_BaseFactory;
@@ -3867,18 +3148,18 @@ var p = (t, n) => {
   if (T) for (var e of T(n)) V.call(n, e) && D(t, e, n[e]);
   return t;
 };
-var N2 = (t, n, e) => new Promise((o, m2) => {
+var N = (t, n, e) => new Promise((o, m) => {
   var i = (r) => {
     try {
       f2(e.next(r));
     } catch (u) {
-      m2(u);
+      m(u);
     }
   }, M = (r) => {
     try {
       f2(e.throw(r));
     } catch (u) {
-      m2(u);
+      m(u);
     }
   }, f2 = (r) => r.done ? o(r.value) : Promise.resolve(r.value).then(i, M);
   f2((e = e.apply(t, n)).next());
@@ -3888,10 +3169,10 @@ var v = "transition";
 function H(t) {
   return t ? t.disabled || !!(t.safe && qt()) : false;
 }
-function k2(t, n) {
-  return t ? p(p({}, t), Object.entries(n).reduce((e, [o, m2]) => {
+function k(t, n) {
+  return t ? p(p({}, t), Object.entries(n).reduce((e, [o, m]) => {
     var i;
-    return e[o] = (i = t[o]) != null ? i : m2, e;
+    return e[o] = (i = t[o]) != null ? i : m, e;
   }, {})) : n;
 }
 function L(t) {
@@ -3903,15 +3184,15 @@ function W2(t) {
 }
 function A(t, n) {
   let e = window.getComputedStyle(t), o = (l2) => {
-    let c2 = e[`${l2}Delay`], h = e[`${l2}Duration`];
-    return [c2.split(", ").map(oe), h.split(", ").map(oe)];
-  }, [m2, i] = o(v), [M, f2] = o(E), r = Math.max(...i.map((l2, c2) => l2 + m2[c2])), u = Math.max(...f2.map((l2, c2) => l2 + M[c2])), a2, s3 = 0, d = 0;
-  return n === v ? r > 0 && (a2 = v, s3 = r, d = i.length) : n === E ? u > 0 && (a2 = E, s3 = u, d = f2.length) : (s3 = Math.max(r, u), a2 = s3 > 0 ? r > u ? v : E : void 0, d = a2 ? a2 === v ? i.length : f2.length : 0), { type: a2, timeout: s3, count: d };
+    let c = e[`${l2}Delay`], h = e[`${l2}Duration`];
+    return [c.split(", ").map(oe), h.split(", ").map(oe)];
+  }, [m, i] = o(v), [M, f2] = o(E), r = Math.max(...i.map((l2, c) => l2 + m[c])), u = Math.max(...f2.map((l2, c) => l2 + M[c])), a, s2 = 0, d = 0;
+  return n === v ? r > 0 && (a = v, s2 = r, d = i.length) : n === E ? u > 0 && (a = E, s2 = u, d = f2.length) : (s2 = Math.max(r, u), a = s2 > 0 ? r > u ? v : E : void 0, d = a ? a === v ? i.length : f2.length : 0), { type: a, timeout: s2, count: d };
 }
 function $(t, n) {
   return typeof t == "number" ? t : typeof t == "object" && t[n] != null ? t[n] : null;
 }
-function S2(t, n = true, e = false) {
+function S(t, n = true, e = false) {
   if (!n && !e) return;
   let o = w(t);
   n && te(t, "--pui-motion-height", o.height + "px"), e && te(t, "--pui-motion-width", o.width + "px");
@@ -3919,41 +3200,41 @@ function S2(t, n = true, e = false) {
 var U = { name: "p", safe: true, disabled: false, enter: true, leave: true, autoHeight: true, autoWidth: false };
 function tt(t, n) {
   if (!t) throw new Error("Element is required.");
-  let e = {}, o = false, m2 = {}, i = null, M = {}, f2 = (a2) => {
-    if (Object.assign(e, k2(a2, U)), !e.enter && !e.leave) throw new Error("Enter or leave must be true.");
-    M = W2(e), o = H(e), m2 = L(e), i = null;
-  }, r = (a2) => N2(null, null, function* () {
+  let e = {}, o = false, m = {}, i = null, M = {}, f2 = (a) => {
+    if (Object.assign(e, k(a, U)), !e.enter && !e.leave) throw new Error("Enter or leave must be true.");
+    M = W2(e), o = H(e), m = L(e), i = null;
+  }, r = (a) => N(null, null, function* () {
     i == null || i();
-    let { onBefore: s3, onStart: d, onAfter: l2, onCancelled: c2 } = M[a2] || {}, h = { element: t };
+    let { onBefore: s2, onStart: d, onAfter: l2, onCancelled: c } = M[a] || {}, h = { element: t };
     if (o) {
-      s3 == null || s3(h), d == null || d(h), l2 == null || l2(h);
+      s2 == null || s2(h), d == null || d(h), l2 == null || l2(h);
       return;
     }
-    let { from: g2, active: y, to: P2 } = m2[a2] || {};
-    return S2(t, e.autoHeight, e.autoWidth), s3 == null || s3(h), W(t, g2), W(t, y), t.offsetHeight, P(t, g2), W(t, P2), d == null || d(h), new Promise((b) => {
-      let C2 = $(e.duration, a2), x = () => {
+    let { from: g, active: y, to: P2 } = m[a] || {};
+    return S(t, e.autoHeight, e.autoWidth), s2 == null || s2(h), W(t, g), W(t, y), t.offsetHeight, P(t, g), W(t, P2), d == null || d(h), new Promise((b) => {
+      let C = $(e.duration, a), x = () => {
         P(t, [P2, y]), i = null;
       }, R = () => {
         x(), l2 == null || l2(h), b();
       };
       i = () => {
-        x(), c2 == null || c2(h), b();
-      }, G(t, e.type, C2, R);
+        x(), c == null || c(h), b();
+      }, G(t, e.type, C, R);
     });
   });
   f2(n);
   let u = { enter: () => e.enter ? r("enter") : Promise.resolve(), leave: () => e.leave ? r("leave") : Promise.resolve(), cancel: () => {
     i == null || i(), i = null;
-  }, update: (a2, s3) => {
-    if (!a2) throw new Error("Element is required.");
-    t = a2, u.cancel(), f2(s3);
+  }, update: (a, s2) => {
+    if (!a) throw new Error("Element is required.");
+    t = a, u.cancel(), f2(s2);
   } };
   return e.appear && u.enter(), u;
 }
 var z = 0;
 function G(t, n, e, o) {
-  let m2 = t._motionEndId = ++z, i = () => {
-    m2 === t._motionEndId && o();
+  let m = t._motionEndId = ++z, i = () => {
+    m === t._motionEndId && o();
   };
   if (e != null) return setTimeout(i, e);
   let { type: M, timeout: f2, count: r } = A(t, n);
@@ -3961,13 +3242,13 @@ function G(t, n, e, o) {
     o();
     return;
   }
-  let u = M + "end", a2 = 0, s3 = () => {
+  let u = M + "end", a = 0, s2 = () => {
     t.removeEventListener(u, d, true), i();
   }, d = (l2) => {
-    l2.target === t && ++a2 >= r && s3();
+    l2.target === t && ++a >= r && s2();
   };
   t.addEventListener(u, d, { capture: true, once: true }), setTimeout(() => {
-    a2 < r && s3();
+    a < r && s2();
   }, f2 + 1);
 }
 
@@ -6181,7 +5462,7 @@ var Toast = class _Toast extends BaseComponent {
   messageService = inject(MessageService);
   _componentStyle = inject(ToastStyle);
   styleElement;
-  id = s2("pn_id_");
+  id = s("pn_id_");
   templates;
   clearAllTrigger = signal(null, ...ngDevMode ? [{
     debugName: "clearAllTrigger"
@@ -6196,7 +5477,7 @@ var Toast = class _Toast extends BaseComponent {
     this.messageSubscription = this.messageService.messageObserver.subscribe((messages) => {
       if (messages) {
         if (Array.isArray(messages)) {
-          const filteredMessages = messages.filter((m2) => this.canAdd(m2));
+          const filteredMessages = messages.filter((m) => this.canAdd(m));
           this.add(filteredMessages);
         } else if (this.canAdd(messages)) {
           this.add([messages]);
@@ -6260,8 +5541,8 @@ var Toast = class _Toast extends BaseComponent {
     if (!collection) {
       return false;
     }
-    return collection.find((m2) => {
-      return m2.summary === message.summary && m2.detail == message.detail && m2.severity === message.severity;
+    return collection.find((m) => {
+      return m.summary === message.summary && m.detail == message.detail && m.severity === message.severity;
     }) != null;
   }
   onMessageClose(event) {

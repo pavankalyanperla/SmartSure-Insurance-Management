@@ -110,4 +110,81 @@ public class EmailService : IEmailService
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
     }
+
+    public async Task SendPasswordResetOtpEmailAsync(string toEmail, string fullName, string otpCode)
+    {
+        var emailSettings = _config.GetSection("EmailSettings");
+        var smtpHost     = emailSettings["SmtpHost"]     ?? throw new InvalidOperationException("EmailSettings:SmtpHost is missing.");
+        var smtpPortStr  = emailSettings["SmtpPort"]     ?? throw new InvalidOperationException("EmailSettings:SmtpPort is missing.");
+        var fromEmail    = emailSettings["FromEmail"]    ?? throw new InvalidOperationException("EmailSettings:FromEmail is missing.");
+        var fromName     = emailSettings["FromName"]     ?? "SmartSure Insurance";
+        var smtpUser     = emailSettings["Username"]     ?? fromEmail;
+        var smtpPassword = emailSettings["Password"]     ?? emailSettings["AppPassword"];
+        var useAuth      = bool.TryParse(emailSettings["UseAuthentication"], out var af) ? af : true;
+        var useTls       = bool.TryParse(emailSettings["UseStartTls"],       out var tf) ? tf : true;
+        var smtpPort     = int.Parse(smtpPortStr);
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, fromEmail));
+        message.To.Add(new MailboxAddress(fullName, toEmail));
+        message.Subject = "SmartSure - Password Reset OTP";
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <style>
+    body {{ font-family: Arial, sans-serif; background: #f9fafb; margin: 0; padding: 20px; }}
+    .container {{ max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }}
+    .header {{ background: linear-gradient(135deg,#1a56db,#7c3aed); padding: 30px; text-align: center; }}
+    .header h1 {{ color: white; margin: 0; font-size: 24px; }}
+    .header p {{ color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px; }}
+    .body {{ padding: 30px; }}
+    .greeting {{ font-size: 16px; color: #111928; margin-bottom: 16px; }}
+    .otp-box {{ background: #f5f3ff; border: 2px dashed #7c3aed; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0; }}
+    .otp-label {{ font-size: 13px; color: #6b7280; margin-bottom: 8px; }}
+    .otp-code {{ font-size: 42px; font-weight: 700; color: #7c3aed; letter-spacing: 12px; font-family: monospace; }}
+    .expiry {{ font-size: 13px; color: #ef4444; margin-top: 12px; }}
+    .info {{ font-size: 13px; color: #6b7280; line-height: 1.6; }}
+    .warning {{ font-size: 13px; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; margin-top: 16px; }}
+    .footer {{ background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; }}
+    .footer p {{ font-size: 12px; color: #9ca3af; margin: 0; }}
+  </style>
+</head>
+<body>
+  <div class='container'>
+    <div class='header'>
+      <h1>SmartSure</h1>
+      <p>Password Reset Request</p>
+    </div>
+    <div class='body'>
+      <p class='greeting'>Hello <strong>{fullName}</strong>,</p>
+      <p class='info'>We received a request to reset your SmartSure account password. Use the OTP below to set a new password.</p>
+      <div class='otp-box'>
+        <div class='otp-label'>Your Password Reset OTP</div>
+        <div class='otp-code'>{otpCode}</div>
+        <div class='expiry'>This OTP expires in 15 minutes</div>
+      </div>
+      <div class='warning'>If you did not request a password reset, please ignore this email. Your password will not be changed.</div>
+    </div>
+    <div class='footer'>
+      <p>Copyright 2026 SmartSure Insurance Management System. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>"
+        };
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using var client = new SmtpClient();
+        client.Timeout = 10000;
+        await client.ConnectAsync(smtpHost, smtpPort, useTls ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
+        if (useAuth) await client.AuthenticateAsync(smtpUser, smtpPassword!);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
 }

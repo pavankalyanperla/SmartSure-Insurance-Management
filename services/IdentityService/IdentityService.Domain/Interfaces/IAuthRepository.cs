@@ -13,5 +13,7 @@ public interface IAuthRepository
     Task MarkOtpAsUsedAsync(int otpId);
     Task<List<User>> GetAllUsersAsync();
     Task<int> GetUsersCountAsync();
+    Task<int> GetActiveUsersCountAsync();
     Task<bool> UpdateUserStatusAsync(int userId, bool isActive);
+    Task<bool> UpdatePasswordAsync(string email, string passwordHash);
 }

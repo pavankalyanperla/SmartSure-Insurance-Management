@@ -16,7 +16,7 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/send-otp`, data);
   }
 
-  verifyOtpAndRegister(data: { email: string; otpCode: string }): Observable<AuthResponse> {
+  verifyOtpAndRegister(data: { email: string; otpCode: string; fullName: string; password: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/verify-register`, data).pipe(
       tap((response: AuthResponse) => {
         if (response?.token) {
@@ -36,6 +36,14 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, data).pipe(
       tap((response) => this.tokenService.setToken(response.token))
     );
+  }
+
+  forgotPasswordSendOtp(email: string): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/forgot-password/send-otp`, { email });
+  }
+
+  forgotPasswordReset(data: { email: string; otpCode: string; newPassword: string }): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/forgot-password/reset`, data);
   }
 
   logout(): void {

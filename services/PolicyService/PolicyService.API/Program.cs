@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PolicyService.Application.Interfaces;
@@ -20,10 +21,14 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Database
+// PendingModelChangesWarning is suppressed because the extra entity properties
+// (ClaimLimit, DurationMonths, etc.) already have matching DB columns from the
+// AddPolicyTypeAdminFields migration — the snapshot just pre-dates those properties.
 builder.Services.AddDbContext<PolicyDbContext>(options =>
     options.UseSqlServer(
-    builder.Configuration.GetConnectionString("DefaultConnection"),
-    sql => sql.MigrationsAssembly("PolicyService.Infrastructure")));
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sql => sql.MigrationsAssembly("PolicyService.Infrastructure"))
+    .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
 // Services
 builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
@@ -115,6 +120,48 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PolicyDbContext>();
     db.Database.Migrate();
+
+    // One-time seed: fill policy type details if still at defaults (DurationMonths == 0)
+    var needsSeed = await db.PolicyTypes.AnyAsync(t => t.DurationMonths == 0);
+    if (needsSeed)
+    {
+        await db.Database.ExecuteSqlRawAsync(@"
+            UPDATE PolicyTypes SET
+                DurationMonths=12, MinAge=18, MaxAge=65, RiskCategory='Medium',
+                ClaimLimit=500000, AutoRenewal=1, GracePeriodDays=15,
+                CoverageDetails='Hospitalization, surgery, ICU, diagnostics, medicines, and ambulance charges',
+                Exclusions='Pre-existing conditions (first year), cosmetic surgery, dental treatments'
+            WHERE Id=1;
+
+            UPDATE PolicyTypes SET
+                DurationMonths=12, MinAge=18, MaxAge=60, RiskCategory='High',
+                ClaimLimit=1000000, AutoRenewal=1, GracePeriodDays=30,
+                CoverageDetails='Death benefit, permanent disability, critical illness coverage',
+                Exclusions='Suicide within first year, self-inflicted injuries, hazardous activities'
+            WHERE Id=2;
+
+            UPDATE PolicyTypes SET
+                DurationMonths=12, MinAge=18, MaxAge=70, RiskCategory='Medium',
+                ClaimLimit=200000, AutoRenewal=1, GracePeriodDays=15,
+                CoverageDetails='Collision damage, theft, third-party liability, natural calamities',
+                Exclusions='Driving under influence, racing, intentional damage'
+            WHERE Id=3;
+
+            UPDATE PolicyTypes SET
+                DurationMonths=12, MinAge=21, MaxAge=80, RiskCategory='Low',
+                ClaimLimit=300000, AutoRenewal=1, GracePeriodDays=30,
+                CoverageDetails='Fire, flood, burglary, earthquake, cyclone, structural damage',
+                Exclusions='Intentional damage, war, nuclear hazards, normal wear and tear'
+            WHERE Id=4;
+
+            UPDATE PolicyTypes SET
+                DurationMonths=3, MinAge=18, MaxAge=70, RiskCategory='Low',
+                ClaimLimit=100000, AutoRenewal=0, GracePeriodDays=0,
+                CoverageDetails='Medical emergencies abroad, trip cancellation, lost baggage, flight delay',
+                Exclusions='Pre-existing conditions, adventure sports without add-on, alcohol-related incidents'
+            WHERE Id=5;
+        ");
+    }
 }
 
 app.Run();

@@ -1,5 +1,7 @@
 export interface DashboardSummary {
   totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
   totalPolicies: number;
   totalClaims: number;
   pendingClaims: number;

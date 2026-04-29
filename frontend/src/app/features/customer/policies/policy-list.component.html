@@ -33,7 +33,7 @@
               <td>{{ policy.policyNumber }}</td>
               <td>{{ policy.policyTypeName }}</td>
               <td><span class="badge" [class]="'badge ' + statusClass(policy.status)">{{ policy.status }}</span></td>
-              <td>{{ policy.premiumAmount | currency:'USD':'symbol':'1.0-0' }}</td>
+              <td>{{ policy.premiumAmount | currency:'INR':'symbol':'1.0-0' }}</td>
               <td>{{ policy.startDate | date:'mediumDate' }} - {{ policy.endDate | date:'mediumDate' }}</td>
               <td><a class="btn-view-light" [routerLink]="['/customer/policies', policy.id]">View</a></td>
             </tr>

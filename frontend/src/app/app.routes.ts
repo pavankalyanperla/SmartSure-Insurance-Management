@@ -4,6 +4,7 @@ import { adminGuard } from './core/guards/admin.guard';
 import { LandingComponent } from './features/landing/landing.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
+import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password.component';
 import { CustomerLayoutComponent } from './features/customer/layout/customer-layout.component';
 import { CustomerDashboardComponent } from './features/customer/dashboard/customer-dashboard.component';
 import { PolicyListComponent } from './features/customer/policies/policy-list.component';
@@ -24,6 +25,7 @@ export const routes: Routes = [
   { path: 'home', component: LandingComponent },
   { path: 'auth/login', component: LoginComponent },
   { path: 'auth/register', component: RegisterComponent },
+  { path: 'auth/forgot-password', component: ForgotPasswordComponent },
   {
     path: 'customer',
     component: CustomerLayoutComponent,

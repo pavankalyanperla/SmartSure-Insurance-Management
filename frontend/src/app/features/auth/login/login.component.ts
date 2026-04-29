@@ -19,6 +19,7 @@ export class LoginComponent {
   private readonly messageService = inject(MessageService);
 
   isSubmitting = false;
+  showPassword = false;
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

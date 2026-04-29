@@ -59,6 +59,17 @@ public class ClaimRepository : IClaimRepository
         return document;
     }
 
+    public async Task<ClaimDocument?> GetDocumentByIdAsync(int documentId)
+    {
+        return await _dbContext.ClaimDocuments.FindAsync(documentId);
+    }
+
+    public async Task DeleteDocumentAsync(ClaimDocument document)
+    {
+        _dbContext.ClaimDocuments.Remove(document);
+        await _dbContext.SaveChangesAsync();
+    }
+
     public async Task<List<ClaimDocument>> GetDocumentsByClaimIdAsync(int claimId)
     {
         return await _dbContext.ClaimDocuments

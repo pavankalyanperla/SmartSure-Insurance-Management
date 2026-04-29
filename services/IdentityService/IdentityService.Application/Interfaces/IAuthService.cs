@@ -11,5 +11,8 @@ public interface IAuthService
     Task<UserProfileDto?> GetProfileAsync(int userId);
     Task<List<UserProfileDto>> GetAllUsersAsync();
     Task<int> GetUsersCountAsync();
+    Task<int> GetActiveUsersCountAsync();
     Task<bool> UpdateUserStatusAsync(int userId, bool isActive);
+    Task<OtpSendResultDto> SendPasswordResetOtpAsync(ForgotPasswordSendOtpDto dto);
+    Task ResetPasswordAsync(ResetPasswordDto dto);
 }

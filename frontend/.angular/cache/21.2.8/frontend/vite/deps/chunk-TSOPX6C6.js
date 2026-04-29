@@ -1,7 +1,4 @@
 import {
-  withHttpTransferCache
-} from "./chunk-3ZE77XV2.js";
-import {
   DomEventsPlugin,
   DomRendererFactory2,
   EVENT_MANAGER_PLUGINS,
@@ -13,6 +10,9 @@ import {
   CommonModule,
   PLATFORM_BROWSER_ID
 } from "./chunk-FURFMX5P.js";
+import {
+  withHttpTransferCache
+} from "./chunk-3ZE77XV2.js";
 import {
   DomAdapter,
   XhrFactory,
@@ -1060,4 +1060,4 @@ export {
   provideClientHydration,
   VERSION
 };
-//# sourceMappingURL=chunk-QK372JM6.js.map
+//# sourceMappingURL=chunk-TSOPX6C6.js.map

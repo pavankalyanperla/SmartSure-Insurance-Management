@@ -28,6 +28,7 @@ public class PolicyTypeResponseDto
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal BaseAmount { get; set; }
+    public bool IsActive { get; set; }
 }
 
 public class PremiumCalculationDto

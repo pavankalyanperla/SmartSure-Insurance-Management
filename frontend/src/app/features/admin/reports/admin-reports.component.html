@@ -1,44 +1,66 @@
 <section class="page-content">
   <div class="page-header"><h1>Reports</h1></div>
+
   <div class="form-card p-4">
-    <h3>Generate New Report</h3>
+    <h3 style="margin:0 0 1rem">Generate Report</h3>
     <div class="flex gap-2 align-items-center flex-wrap">
-      <select class="form-input policy-select" [(ngModel)]="selectedReportType" style="width: 260px;">
+      <select
+        class="form-input policy-select"
+        [(ngModel)]="selectedReportType"
+        (ngModelChange)="onTypeChange()"
+        style="width:260px">
         @for (type of reportTypes; track type.value) {
           <option [value]="type.value">{{ type.label }}</option>
         }
       </select>
-      <button class="btn-primary" (click)="generateReport()" [disabled]="isGenerating">{{ isGenerating ? 'Generating...' : 'Generate' }}</button>
+      <button class="btn-primary" (click)="generateReport()" [disabled]="isGenerating">
+        <i class="pi" [class]="isGenerating ? 'pi-spin pi-spinner' : 'pi-chart-bar'"></i>
+        {{ isGenerating ? 'Generating...' : 'Generate Report' }}
+      </button>
     </div>
+    @if (!reportData && !isGenerating) {
+      <p style="margin:.75rem 0 0;font-size:.88rem;color:#6b7280">
+        Select a report type above and click Generate.
+        Switching the type clears the previous report.
+      </p>
+    }
   </div>
+
+  @if (isGenerating) {
+    <div class="loading-container" style="min-height:200px">
+      <i class="pi pi-spin pi-spinner" style="font-size:2rem;color:#1a56db"></i>
+      <p style="margin-top:.75rem;color:#6b7280">Fetching data from all services, please wait...</p>
+    </div>
+  }
 
   @if (reportData && !isGenerating) {
     <div class="form-card p-4 mt-4">
-      <h3>Report: {{ selectedReportType }} — {{ generatedAt | date:'medium' }}</h3>
-      <div class="grid mt-2">
-        @if (reportData['totalUsers'] !== undefined) {
-          <div class="col-12 md:col-4"><div class="stat-card blue"><div class="stat-value">{{ reportData['totalUsers'] }}</div><div class="stat-label">Total Users</div></div></div>
-        }
-        @if (reportData['totalPolicies'] !== undefined) {
-          <div class="col-12 md:col-4"><div class="stat-card green"><div class="stat-value">{{ reportData['totalPolicies'] }}</div><div class="stat-label">Total Policies</div></div></div>
-        }
-        @if (reportData['totalClaims'] !== undefined) {
-          <div class="col-12 md:col-4"><div class="stat-card orange"><div class="stat-value">{{ reportData['totalClaims'] }}</div><div class="stat-label">Total Claims</div></div></div>
-        }
-        @if (reportData['totalRevenue'] !== undefined) {
-          <div class="col-12 md:col-4"><div class="stat-card teal"><div class="stat-value">{{ +reportData['totalRevenue']! | currency:'INR':'symbol':'1.0-0' }}</div><div class="stat-label">Total Revenue</div></div></div>
-        }
-        @if (reportData['pendingClaims'] !== undefined) {
-          <div class="col-12 md:col-4"><div class="stat-card orange"><div class="stat-value">{{ reportData['pendingClaims'] }}</div><div class="stat-label">Pending Claims</div></div></div>
-        }
-        @if (reportData['approvedClaims'] !== undefined) {
-          <div class="col-12 md:col-4"><div class="stat-card green"><div class="stat-value">{{ reportData['approvedClaims'] }}</div><div class="stat-label">Approved Claims</div></div></div>
-        }
-        @if (reportData['rejectedClaims'] !== undefined) {
-          <div class="col-12 md:col-4"><div class="stat-card red"><div class="stat-value">{{ reportData['rejectedClaims'] }}</div><div class="stat-label">Rejected Claims</div></div></div>
+      <div class="flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+          <h3 style="margin:0 0 .2rem">{{ generatedForLabel }}</h3>
+          <p style="margin:0;font-size:.83rem;color:#6b7280">Generated at {{ generatedAt | date:'medium' }}</p>
+        </div>
+        <button class="btn-outline-primary" (click)="exportReport()">
+          <i class="pi pi-download"></i> Export JSON
+        </button>
+      </div>
+
+      <div class="grid">
+        @for (field of currentFields; track field.key) {
+          <div class="col-12 md:col-4">
+            <div class="stat-card" [class]="field.color">
+              <div class="stat-value">
+                @if (field.isCurrency) {
+                  {{ $any(getValue(field.key)) | currency:'INR':'symbol':'1.0-0' }}
+                } @else {
+                  {{ getValue(field.key) }}
+                }
+              </div>
+              <div class="stat-label">{{ field.label }}</div>
+            </div>
+          </div>
         }
       </div>
-      <button class="btn-outline-primary mt-3" (click)="exportReport()">Export</button>
     </div>
   }
 </section>

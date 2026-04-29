@@ -10,7 +10,7 @@
     <div class="form-card p-4">
       <div class="form-group">
         <label class="form-label">Active Policy</label>
-        <select class="form-input policy-select" [(ngModel)]="selectedPolicyId">
+        <select class="form-input policy-select" [(ngModel)]="selectedPolicyId" (ngModelChange)="incidentDate = ''">
           <option [ngValue]="null">Select active policy</option>
           @for (policy of policies; track policy.id) {
             <option [ngValue]="policy.id">{{ policy.policyNumber }} - {{ policy.policyTypeName }}</option>
@@ -20,7 +20,7 @@
       <div class="grid">
         <div class="col-12 md:col-4">
           <label class="form-label">Incident Date</label>
-          <input class="form-input" type="date" [max]="todayDate" [(ngModel)]="incidentDate" />
+          <input class="form-input" type="date" [min]="minIncidentDate" [max]="todayDate" [(ngModel)]="incidentDate" [disabled]="!selectedPolicyId" />
         </div>
         <div class="col-12 md:col-8">
           <label class="form-label">Description</label>
@@ -35,7 +35,13 @@
   @if (step === 2) {
     <div class="form-card p-4">
       <h3>Upload Documents</h3>
-      <input class="form-input" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" (change)="handleFiles($event)">
+      <div class="alert-info mb-3">
+        <strong>Required:</strong> Upload one supporting document (PDF, JPG, JPEG, or PNG, max 5 MB) to proceed with your claim.
+      </div>
+      <input class="form-input" type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="handleFiles($event)">
+      @if (selectedFiles.length === 0) {
+        <div class="alert-warn mt-2">No documents selected. Please choose at least one file.</div>
+      }
       <div class="docs-list mt-3">
         @for (file of selectedFiles; track file.name) {
           <div class="doc-item">
@@ -49,7 +55,7 @@
       </div>
       <div class="flex gap-2 mt-3">
         <button class="btn-view-light" (click)="previousStep()">Back</button>
-        <button class="btn-primary" (click)="uploadDocuments()" [disabled]="isUploading">{{ isUploading ? 'Uploading...' : 'Next' }}</button>
+        <button class="btn-primary" (click)="uploadDocuments()" [disabled]="isUploading || selectedFiles.length === 0">{{ isUploading ? 'Uploading...' : 'Upload & Next' }}</button>
       </div>
     </div>
   }

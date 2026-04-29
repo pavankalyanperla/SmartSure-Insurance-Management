@@ -147,6 +147,29 @@ public class ClaimsController : ControllerBase
         }
     }
 
+    [HttpDelete("{claimId:int}/documents/{documentId:int}")]
+    [Authorize(Roles = "CUSTOMER")]
+    public async Task<IActionResult> DeleteDocument(int claimId, int documentId)
+    {
+        var customerId = ExtractCustomerId();
+        if (customerId is null)
+            return Unauthorized();
+
+        try
+        {
+            await _claimService.DeleteDocumentAsync(claimId, documentId, customerId.Value);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("admin/stats")]
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> GetClaimsStats()

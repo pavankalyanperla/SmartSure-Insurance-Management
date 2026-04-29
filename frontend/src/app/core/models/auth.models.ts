@@ -18,6 +18,8 @@ export interface LoginRequest {
 export interface VerifyOtpRequest {
   email: string;
   otpCode: string;
+  fullName: string;
+  password: string;
 }
 
 export interface AuthResponse {

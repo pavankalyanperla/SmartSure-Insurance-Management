@@ -102,6 +102,11 @@ public class AuthRepository : IAuthRepository
         return await _context.Users.CountAsync();
     }
 
+    public async Task<int> GetActiveUsersCountAsync()
+    {
+        return await _context.Users.CountAsync(u => u.IsActive);
+    }
+
     public async Task<bool> UpdateUserStatusAsync(int userId, bool isActive)
     {
         var user = await _context.Users.FindAsync(userId);
@@ -111,6 +116,16 @@ public class AuthRepository : IAuthRepository
         }
 
         user.IsActive = isActive;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdatePasswordAsync(string email, string passwordHash)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLower());
+        if (user is null) return false;
+
+        user.PasswordHash = passwordHash;
         await _context.SaveChangesAsync();
         return true;
     }

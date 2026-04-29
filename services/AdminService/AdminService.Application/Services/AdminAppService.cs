@@ -1,5 +1,6 @@
 namespace AdminService.Application.Services;
 
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text.Json;
 using AdminService.Application.DTOs;
@@ -17,6 +18,12 @@ public class AdminAppService : IAdminService
     private readonly IConfiguration _config;
     private readonly ILogger<AdminAppService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
+
+    // Case-insensitive so camelCase JSON from downstream services maps to PascalCase C# DTOs
+    private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     public AdminAppService(
         IAdminRepository repository,
@@ -37,85 +44,53 @@ public class AdminAppService : IAdminService
         var dto = new DashboardSummaryDto();
         var token = GetJwtToken();
 
-        try
-        {
-            var userCountResponse = await GetServiceDataWithAuthAsync("http://localhost:5265/api/auth/admin/users/count", token);
-            if (!string.IsNullOrEmpty(userCountResponse))
-            {
-                using var doc = JsonDocument.Parse(userCountResponse);
-                if (doc.RootElement.TryGetProperty("totalUsers", out var totalUsersElement))
-                {
-                    dto.TotalUsers = totalUsersElement.GetInt32();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to get user count from IdentityService: {Message}", ex.Message);
-        }
+        // Fire all three downstream calls in parallel to avoid sequential wait
+        var userTask    = GetWithAuthAsync("http://localhost:5265/api/auth/admin/users/count", token);
+        var policyTask  = GetWithAuthAsync("http://localhost:5145/api/policies/admin/count", token);
+        var claimsTask  = GetWithAuthAsync("http://localhost:5084/api/claims/admin/stats", token);
+        await Task.WhenAll(userTask, policyTask, claimsTask);
 
         try
         {
-            var policyResponse = await GetServiceDataWithAuthAsync("http://localhost:5145/api/policies/admin/count", token);
-            if (!string.IsNullOrEmpty(policyResponse))
+            var body = await userTask;
+            if (!string.IsNullOrEmpty(body))
             {
-                using var doc = JsonDocument.Parse(policyResponse);
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("totalUsers",    out var el))  dto.TotalUsers    = el.GetInt32();
+                if (doc.RootElement.TryGetProperty("activeUsers",   out var el2)) dto.ActiveUsers   = el2.GetInt32();
+                if (doc.RootElement.TryGetProperty("inactiveUsers", out var el3)) dto.InactiveUsers = el3.GetInt32();
+            }
+        }
+        catch (Exception ex) { _logger.LogWarning("IdentityService user count failed: {Message}", ex.Message); }
+
+        try
+        {
+            var body = await policyTask;
+            if (!string.IsNullOrEmpty(body))
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("totalPolicies", out var el))  dto.TotalPolicies = el.GetInt32();
+                if (doc.RootElement.TryGetProperty("totalRevenue",  out var el2)) dto.TotalRevenue   = el2.GetDecimal();
+            }
+        }
+        catch (Exception ex) { _logger.LogWarning("PolicyService count failed: {Message}", ex.Message); }
+
+        try
+        {
+            var body = await claimsTask;
+            if (!string.IsNullOrEmpty(body))
+            {
+                using var doc = JsonDocument.Parse(body);
                 var root = doc.RootElement;
-                if (root.TryGetProperty("totalPolicies", out var totalPoliciesElement))
-                {
-                    dto.TotalPolicies = totalPoliciesElement.GetInt32();
-                }
-
-                if (root.TryGetProperty("totalRevenue", out var totalRevenueElement))
-                {
-                    dto.TotalRevenue = totalRevenueElement.GetDecimal();
-                }
+                if (root.TryGetProperty("totalClaims",       out var el))  dto.TotalClaims     = el.GetInt32();
+                if (root.TryGetProperty("submittedClaims",   out var el2)) dto.PendingClaims   = el2.GetInt32();
+                if (root.TryGetProperty("underReviewClaims", out var el3)) dto.PendingClaims  += el3.GetInt32();
+                if (root.TryGetProperty("approvedClaims",    out var el4)) dto.ApprovedClaims  = el4.GetInt32();
+                if (root.TryGetProperty("rejectedClaims",    out var el5)) dto.RejectedClaims  = el5.GetInt32();
+                if (root.TryGetProperty("closedClaims",      out var el6)) dto.ClosedClaims    = el6.GetInt32();
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to get policy count from PolicyService: {Message}", ex.Message);
-        }
-
-        try
-        {
-            var claimsStatsResponse = await GetServiceDataWithAuthAsync("http://localhost:5084/api/claims/admin/stats", token);
-            if (!string.IsNullOrEmpty(claimsStatsResponse))
-            {
-                using var doc = JsonDocument.Parse(claimsStatsResponse);
-                var root = doc.RootElement;
-                if (root.TryGetProperty("totalClaims", out var totalClaimsElement))
-                {
-                    dto.TotalClaims = totalClaimsElement.GetInt32();
-                }
-                if (root.TryGetProperty("submittedClaims", out var submittedClaimsElement))
-                {
-                    var submittedCount = submittedClaimsElement.GetInt32();
-                    dto.PendingClaims = submittedCount;
-                }
-                if (root.TryGetProperty("underReviewClaims", out var underReviewClaimsElement))
-                {
-                    var underReviewCount = underReviewClaimsElement.GetInt32();
-                    dto.PendingClaims += underReviewCount;
-                }
-                if (root.TryGetProperty("approvedClaims", out var approvedClaimsElement))
-                {
-                    dto.ApprovedClaims = approvedClaimsElement.GetInt32();
-                }
-                if (root.TryGetProperty("rejectedClaims", out var rejectedClaimsElement))
-                {
-                    dto.RejectedClaims = rejectedClaimsElement.GetInt32();
-                }
-                if (root.TryGetProperty("closedClaims", out var closedClaimsElement))
-                {
-                    dto.ClosedClaims = closedClaimsElement.GetInt32();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to get claims stats from ClaimsService: {Message}", ex.Message);
-        }
+        catch (Exception ex) { _logger.LogWarning("ClaimsService stats failed: {Message}", ex.Message); }
 
         return dto;
     }
@@ -123,50 +98,37 @@ public class AdminAppService : IAdminService
     public async Task<List<ClaimReviewDto>> GetPendingClaimsAsync()
     {
         var claims = new List<ClaimReviewDto>();
-
         try
         {
             var token = GetJwtToken();
-            var response = await GetServiceDataWithAuthAsync("http://localhost:5084/api/claims", token);
-            if (!string.IsNullOrEmpty(response))
+            var body = await GetWithAuthAsync("http://localhost:5084/api/claims", token);
+            if (!string.IsNullOrEmpty(body))
             {
-                var allClaims = JsonSerializer.Deserialize<List<ClaimReviewDto>>(response);
-                if (allClaims != null)
-                {
-                    claims = allClaims.Where(c => c.Status == "Submitted" || c.Status == "UnderReview").ToList();
-                }
+                var all = JsonSerializer.Deserialize<List<ClaimsApiItem>>(body, CaseInsensitiveOptions);
+                if (all != null)
+                    claims = all.Where(c => c.Status == "Submitted" || c.Status == "UnderReview")
+                                .Select(MapToClaim).ToList();
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to get pending claims from ClaimsService: {Message}", ex.Message);
-        }
-
+        catch (Exception ex) { _logger.LogWarning("ClaimsService pending claims failed: {Message}", ex.Message); }
         return claims;
     }
 
     public async Task<List<ClaimReviewDto>> GetAllClaimsAsync()
     {
         var claims = new List<ClaimReviewDto>();
-
         try
         {
             var token = GetJwtToken();
-            var response = await GetServiceDataWithAuthAsync("http://localhost:5084/api/claims", token);
-            if (!string.IsNullOrEmpty(response))
+            var body = await GetWithAuthAsync("http://localhost:5084/api/claims", token);
+            if (!string.IsNullOrEmpty(body))
             {
-                var allClaims = JsonSerializer.Deserialize<List<ClaimReviewDto>>(response);
-                if (allClaims != null)
-                {
-                    claims = allClaims;
-                }
+                var all = JsonSerializer.Deserialize<List<ClaimsApiItem>>(body, CaseInsensitiveOptions);
+                if (all != null)
+                    claims = all.Select(MapToClaim).ToList();
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to get all claims from ClaimsService: {Message}", ex.Message);
-        }
-
+        catch (Exception ex) { _logger.LogWarning("ClaimsService all claims failed: {Message}", ex.Message); }
         return claims;
     }
 
@@ -175,37 +137,27 @@ public class AdminAppService : IAdminService
         try
         {
             var token = GetJwtToken();
-            var url = $"http://localhost:5084/api/claims/{dto.ClaimId}/status";
-            
-            var updatePayload = new { status = dto.Status, adminNote = dto.AdminNote };
-            var jsonContent = new StringContent(
-                JsonSerializer.Serialize(updatePayload),
-                System.Text.Encoding.UTF8,
-                "application/json");
+            var url     = $"http://localhost:5084/api/claims/{dto.ClaimId}/status";
+            var payload = JsonSerializer.Serialize(new { status = dto.Status, adminNote = dto.AdminNote });
 
-            if (!string.IsNullOrWhiteSpace(token))
+            using var request = new HttpRequestMessage(HttpMethod.Put, url)
             {
-                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Replace("Bearer ", ""));
-            }
-
-            using (var request = new HttpRequestMessage(HttpMethod.Put, url))
-            {
-                request.Content = jsonContent;
-                var response = await _httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-            }
-
-            // Log the action
-            var adminLog = new AdminLog
-            {
-                AdminId = adminId,
-                Action = "UpdateClaimStatus",
-                TargetType = "Claim",
-                TargetId = dto.ClaimId,
-                Notes = dto.AdminNote,
-                CreatedAt = DateTime.UtcNow
+                Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
             };
-            await _repository.CreateLogAsync(adminLog);
+            SetAuthHeader(request, token);
+
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            await _repository.CreateLogAsync(new AdminLog
+            {
+                AdminId    = adminId,
+                Action     = "UpdateClaimStatus",
+                TargetType = "Claim",
+                TargetId   = dto.ClaimId,
+                Notes      = dto.AdminNote,
+                CreatedAt  = DateTime.UtcNow
+            });
 
             return new ClaimReviewDto { ClaimId = dto.ClaimId };
         }
@@ -219,65 +171,66 @@ public class AdminAppService : IAdminService
     public async Task<List<UserManagementDto>> GetAllUsersAsync()
     {
         var users = new List<UserManagementDto>();
-
         try
         {
             var token = GetJwtToken();
-            var response = await GetServiceDataWithAuthAsync("http://localhost:5265/api/auth/admin/users", token);
-            if (!string.IsNullOrEmpty(response))
+            var body = await GetWithAuthAsync("http://localhost:5265/api/auth/admin/users", token);
+            if (!string.IsNullOrEmpty(body))
             {
-                var allUsers = JsonSerializer.Deserialize<List<UserManagementDto>>(response);
-                if (allUsers != null)
-                {
-                    users = allUsers;
-                }
+                // IdentityService returns { id, fullName, … } (not userId), so use a local shape
+                var raw = JsonSerializer.Deserialize<List<IdentityUserItem>>(body, CaseInsensitiveOptions);
+                if (raw != null)
+                    users = raw.Select(u => new UserManagementDto
+                    {
+                        UserId    = u.Id,
+                        FullName  = u.FullName,
+                        Email     = u.Email,
+                        Role      = u.Role,
+                        IsActive  = u.IsActive,
+                        CreatedAt = u.CreatedAt
+                    }).ToList();
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Failed to get all users from IdentityService: {Message}", ex.Message);
-        }
-
+        catch (Exception ex) { _logger.LogWarning("IdentityService users failed: {Message}", ex.Message); }
         return users;
+    }
+
+    private sealed class IdentityUserItem
+    {
+        public int      Id        { get; set; }
+        public string   FullName  { get; set; } = string.Empty;
+        public string   Email     { get; set; } = string.Empty;
+        public string   Role      { get; set; } = string.Empty;
+        public bool     IsActive  { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public async Task<UserManagementDto> UpdateUserStatusAsync(int userId, UpdateUserStatusDto dto)
     {
         try
         {
-            var token = GetJwtToken();
-            var url = $"http://localhost:5265/api/auth/admin/users/{userId}/status";
+            var token   = GetJwtToken();
+            var url     = $"http://localhost:5265/api/auth/admin/users/{userId}/status";
+            var payload = JsonSerializer.Serialize(new { isActive = dto.IsActive });
 
-            var updatePayload = new { isActive = dto.IsActive };
-            var jsonContent = new StringContent(
-                JsonSerializer.Serialize(updatePayload),
-                System.Text.Encoding.UTF8,
-                "application/json");
-
-            if (!string.IsNullOrWhiteSpace(token))
+            using var request = new HttpRequestMessage(HttpMethod.Put, url)
             {
-                _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Replace("Bearer ", ""));
-            }
-
-            using (var request = new HttpRequestMessage(HttpMethod.Put, url))
-            {
-                request.Content = jsonContent;
-                var response = await _httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-            }
-
-            // Log the action
-            var adminId = ExtractAdminIdFromContext();
-            var adminLog = new AdminLog
-            {
-                AdminId = adminId,
-                Action = "UpdateUserStatus",
-                TargetType = "User",
-                TargetId = userId,
-                Notes = $"Set IsActive to {dto.IsActive}",
-                CreatedAt = DateTime.UtcNow
+                Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
             };
-            await _repository.CreateLogAsync(adminLog);
+            SetAuthHeader(request, token);
+
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            await _repository.CreateLogAsync(new AdminLog
+            {
+                AdminId    = ExtractAdminIdFromContext(),
+                Action     = "UpdateUserStatus",
+                TargetType = "User",
+                TargetId   = userId,
+                Notes      = $"Set IsActive to {dto.IsActive}",
+                CreatedAt  = DateTime.UtcNow
+            });
 
             return new UserManagementDto { UserId = userId };
         }
@@ -293,29 +246,29 @@ public class AdminAppService : IAdminService
         try
         {
             var dashboardData = await GetDashboardSummaryAsync();
-            var jsonData = JsonSerializer.Serialize(dashboardData);
+
+            // TryParse so an unknown reportType string doesn't throw
+            if (!Enum.TryParse<Domain.Enums.ReportType>(reportType, ignoreCase: true, out var parsedType))
+                parsedType = Domain.Enums.ReportType.ClaimsSummary;
 
             var report = new Report
             {
-                ReportType = (Domain.Enums.ReportType)Enum.Parse(typeof(Domain.Enums.ReportType), reportType),
+                ReportType  = parsedType,
                 GeneratedBy = adminId,
                 GeneratedAt = DateTime.UtcNow,
-                Data = jsonData
+                Data        = JsonSerializer.Serialize(dashboardData)
             };
-
             await _repository.CreateReportAsync(report);
 
-            // Log the action
-            var adminLog = new AdminLog
+            await _repository.CreateLogAsync(new AdminLog
             {
-                AdminId = adminId,
-                Action = "GenerateReport",
+                AdminId    = adminId,
+                Action     = "GenerateReport",
                 TargetType = "Report",
-                TargetId = report.Id,
-                Notes = $"Generated {reportType} report",
-                CreatedAt = DateTime.UtcNow
-            };
-            await _repository.CreateLogAsync(adminLog);
+                TargetId   = report.Id,
+                Notes      = $"Generated {reportType} report",
+                CreatedAt  = DateTime.UtcNow
+            });
 
             return dashboardData;
         }
@@ -333,13 +286,13 @@ public class AdminAppService : IAdminService
             var logs = await _repository.GetLogsAsync();
             return logs.Select(log => new AdminLogDto
             {
-                Id = log.Id,
-                AdminId = log.AdminId,
-                Action = log.Action,
+                Id         = log.Id,
+                AdminId    = log.AdminId,
+                Action     = log.Action,
                 TargetType = log.TargetType,
-                TargetId = log.TargetId,
-                Notes = log.Notes,
-                CreatedAt = log.CreatedAt
+                TargetId   = log.TargetId,
+                Notes      = log.Notes,
+                CreatedAt  = log.CreatedAt
             }).ToList();
         }
         catch (Exception ex)
@@ -349,56 +302,61 @@ public class AdminAppService : IAdminService
         }
     }
 
-    private async Task<string?> GetServiceDataAsync(string url)
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private async Task<string?> GetWithAuthAsync(string url, string? token)
     {
-        var response = await _httpClient.GetAsync(url);
-        if (response.IsSuccessStatusCode)
-        {
-            return await response.Content.ReadAsStringAsync();
-        }
-        return null;
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        SetAuthHeader(request, token);
+        var response = await _httpClient.SendAsync(request);
+        return response.IsSuccessStatusCode ? await response.Content.ReadAsStringAsync() : null;
     }
 
-    private async Task<string?> GetServiceDataWithAuthAsync(string url, string? token)
+    // Sets Authorization header on the individual request (avoids mutating shared DefaultRequestHeaders)
+    private static void SetAuthHeader(HttpRequestMessage request, string? token)
     {
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Replace("Bearer ", ""));
-        }
-
-        using (var request = new HttpRequestMessage(HttpMethod.Get, url))
-        {
-            var response = await _httpClient.SendAsync(request);
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadAsStringAsync();
-            }
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(token)) return;
+        var bearer = token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? token["Bearer ".Length..]
+            : token;
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
     }
 
     private string? GetJwtToken()
-    {
-        var context = _httpContextAccessor?.HttpContext;
-        if (context != null)
-        {
-            return context.Request.Headers["Authorization"].ToString();
-        }
-        return null;
-    }
+        => _httpContextAccessor?.HttpContext?.Request.Headers["Authorization"].ToString();
 
     private int ExtractAdminIdFromContext()
     {
-        var context = _httpContextAccessor?.HttpContext;
-        if (context?.User != null)
-        {
-            var idClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
-                          context.User.FindFirst("sub")?.Value;
-            if (!string.IsNullOrEmpty(idClaim) && int.TryParse(idClaim, out var id))
-            {
-                return id;
-            }
-        }
-        return 0;
+        var user = _httpContextAccessor?.HttpContext?.User;
+        if (user == null) return 0;
+        var raw = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;
+        return int.TryParse(raw, out var id) ? id : 0;
+    }
+
+    private static ClaimReviewDto MapToClaim(ClaimsApiItem c) => new()
+    {
+        ClaimId      = c.Id,
+        ClaimNumber  = c.ClaimNumber,
+        CustomerName = $"Customer #{c.CustomerId}",
+        PolicyId     = c.PolicyId,
+        IncidentDate = c.IncidentDate,
+        Description  = c.Description,
+        Status       = c.Status,
+        AdminNote    = c.AdminNote,
+        CreatedAt    = c.CreatedAt
+    };
+
+    // Matches the shape ClaimsService actually returns (id, not claimId)
+    private sealed class ClaimsApiItem
+    {
+        public int      Id          { get; set; }
+        public string   ClaimNumber { get; set; } = string.Empty;
+        public int      PolicyId    { get; set; }
+        public int      CustomerId  { get; set; }
+        public DateTime IncidentDate{ get; set; }
+        public string   Description { get; set; } = string.Empty;
+        public string   Status      { get; set; } = string.Empty;
+        public string?  AdminNote   { get; set; }
+        public DateTime CreatedAt   { get; set; }
     }
 }

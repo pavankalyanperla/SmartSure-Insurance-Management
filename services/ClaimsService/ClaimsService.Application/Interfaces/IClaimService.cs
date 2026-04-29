@@ -11,5 +11,6 @@ public interface IClaimService
     Task<List<ClaimResponseDto>> GetAllClaimsAsync();
     Task<ClaimResponseDto> UpdateClaimStatusAsync(int claimId, UpdateClaimStatusDto dto);
     Task<ClaimDocumentDto> AddDocumentAsync(int claimId, string fileName, string filePath, string fileType, long fileSize);
+    Task DeleteDocumentAsync(int claimId, int documentId, int customerId);
     Task<object> GetClaimsStatsAsync();
 }

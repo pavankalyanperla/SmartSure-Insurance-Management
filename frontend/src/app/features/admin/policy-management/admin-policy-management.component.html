@@ -40,11 +40,11 @@
             </div>
             <p>{{ policy.description }}</p>
             <div class="policy-details-grid">
-              <div><strong>Base Amount</strong><div>{{ policy.baseAmount | currency:'USD':'symbol':'1.0-0' }}</div></div>
+              <div><strong>Base Amount</strong><div>{{ policy.baseAmount | currency:'INR':'symbol':'1.0-0' }}</div></div>
               <div><strong>Duration</strong><div>{{ policy.durationMonths }} months</div></div>
               <div><strong>Age Range</strong><div>{{ policy.minAge }} - {{ policy.maxAge }}</div></div>
               <div><strong>Risk</strong><div>{{ policy.riskCategory }}</div></div>
-              <div><strong>Claim Limit</strong><div>{{ policy.claimLimit | currency:'USD':'symbol':'1.0-0' }}</div></div>
+              <div><strong>Claim Limit</strong><div>{{ policy.claimLimit | currency:'INR':'symbol':'1.0-0' }}</div></div>
               <div><strong>Auto Renewal</strong><div>{{ policy.autoRenewal ? 'Yes' : 'No' }}</div></div>
             </div>
             <p class="mt-3"><strong>Enrolled:</strong> {{ policy.enrolledCount || 0 }}</p>
@@ -97,8 +97,36 @@
 
       @if (statsOpen) {
         <section class="review-section">
-          <h4>{{ selectedPolicy?.name }}</h4>
-          <pre>{{ statsData | json }}</pre>
+          <h4>{{ selectedPolicy?.name }} — Statistics</h4>
+          @if (statsData === null) {
+            <div class="loading-container">Loading stats...</div>
+          } @else {
+            <div class="policy-details-grid mt-3 mb-4">
+              <div class="stat-card blue" style="padding:1rem;border-radius:8px">
+                <strong style="font-size:.75rem;color:#6b7280">Total Policies</strong>
+                <h2 style="margin:.25rem 0 0">{{ statsData['totalPolicies'] ?? 0 }}</h2>
+              </div>
+              <div class="stat-card green" style="padding:1rem;border-radius:8px">
+                <strong style="font-size:.75rem;color:#6b7280">Active</strong>
+                <h2 style="margin:.25rem 0 0">{{ statsData['activePolicies'] ?? 0 }}</h2>
+              </div>
+              <div class="stat-card" style="padding:1rem;border-radius:8px;background:#f0f9ff">
+                <strong style="font-size:.75rem;color:#6b7280">Total Revenue</strong>
+                <h2 style="margin:.25rem 0 0;font-size:1.1rem">{{ $any(statsData['totalPremium'] ?? 0) | currency:'INR':'symbol':'1.0-0' }}</h2>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start">
+              <div style="flex:1;min-width:160px">
+                <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:.5rem;text-align:center">Policy Breakdown</p>
+                <p-chart type="doughnut" [data]="doughnutData" [options]="doughnutOptions" height="200" />
+              </div>
+              <div style="flex:2;min-width:200px">
+                <p style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:.5rem;text-align:center">Policies by Status</p>
+                <p-chart type="bar" [data]="barData" [options]="barOptions" height="200" />
+              </div>
+            </div>
+          }
         </section>
       }
     </aside>

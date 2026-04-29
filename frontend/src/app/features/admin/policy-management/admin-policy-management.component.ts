@@ -1,20 +1,21 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule, CurrencyPipe } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ChartModule } from 'primeng/chart';
 import { PolicyService } from '../../../core/services/policy.service';
 import { PolicyType } from '../../../core/models/policy.models';
 import { MessageService } from 'primeng/api';
-import { CurrencyPipe } from '@angular/common';
 
 @Component({
   selector: 'app-admin-policy-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe],
+  imports: [CommonModule, FormsModule, CurrencyPipe, ChartModule],
   templateUrl: './admin-policy-management.component.html'
 })
 export class AdminPolicyManagementComponent implements OnInit {
   private readonly policyService = inject(PolicyService);
   private readonly messageService = inject(MessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   isLoading = true;
   policies: PolicyType[] = [];
@@ -30,6 +31,11 @@ export class AdminPolicyManagementComponent implements OnInit {
   selectedPolicy: PolicyType | null = null;
   statsData: Record<string, unknown> | null = null;
 
+  doughnutData: any = null;
+  barData: any = null;
+  doughnutOptions: any = null;
+  barOptions: any = null;
+
   form: Partial<PolicyType> = this.emptyForm();
 
   ngOnInit(): void {
@@ -38,18 +44,19 @@ export class AdminPolicyManagementComponent implements OnInit {
 
   loadPolicies(): void {
     this.isLoading = true;
-    this.policyService.getAdminPolicyTypes().subscribe({
-      next: (policies) => {
-        this.policies = policies;
-        this.applyFilters();
-      },
-      complete: () => {
-        this.isLoading = false;
-      },
-      error: () => {
-        this.isLoading = false;
-      }
-    });
+    this.policyService.getAdminPolicyTypes()
+      .subscribe({
+        next: (policies) => {
+          this.policies = policies;
+          this.applyFilters();
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   applyFilters(): void {
@@ -74,10 +81,65 @@ export class AdminPolicyManagementComponent implements OnInit {
 
   openStats(policy: PolicyType): void {
     this.selectedPolicy = policy;
+    this.statsData = null;
+    this.doughnutData = null;
+    this.barData = null;
     this.statsOpen = true;
-    this.policyService.getPolicyTypeStats(policy.id).subscribe((stats) => {
-      this.statsData = stats as Record<string, unknown>;
+    this.policyService.getPolicyTypeStats(policy.id).subscribe({
+      next: (raw) => {
+        const stats = raw as Record<string, unknown>;
+        this.statsData = stats;
+        this.buildStatsCharts(stats);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.statsData = {};
+        this.cdr.detectChanges();
+      }
     });
+  }
+
+  private buildStatsCharts(stats: Record<string, unknown>): void {
+    const total  = Number(stats['totalPolicies']  ?? 0);
+    const active = Number(stats['activePolicies'] ?? 0);
+    const inactive = total - active;
+    const premium = Number(stats['totalPremium'] ?? 0);
+
+    this.doughnutData = {
+      labels: ['Active', 'Inactive'],
+      datasets: [{
+        data: [active, inactive],
+        backgroundColor: ['#10b981', '#6b7280'],
+        hoverBackgroundColor: ['#059669', '#4b5563'],
+        borderWidth: 0
+      }]
+    };
+
+    this.doughnutOptions = {
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } }
+      }
+    };
+
+    this.barData = {
+      labels: ['Total Policies', 'Active', 'Inactive'],
+      datasets: [{
+        label: 'Count',
+        data: [total, active, inactive],
+        backgroundColor: ['#3b82f6', '#10b981', '#6b7280'],
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    };
+
+    this.barOptions = {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,.05)' } },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    };
   }
 
   closePanels(): void {
@@ -86,6 +148,8 @@ export class AdminPolicyManagementComponent implements OnInit {
     this.statsOpen = false;
     this.selectedPolicy = null;
     this.statsData = null;
+    this.doughnutData = null;
+    this.barData = null;
   }
 
   createPolicy(): void {
@@ -99,9 +163,7 @@ export class AdminPolicyManagementComponent implements OnInit {
   }
 
   updatePolicy(): void {
-    if (!this.selectedPolicy) {
-      return;
-    }
+    if (!this.selectedPolicy) return;
     this.policyService.updatePolicyType(this.selectedPolicy.id, this.form).subscribe({
       next: () => {
         this.messageService.add({ severity: 'success', summary: 'Updated', detail: 'Policy type updated successfully.' });
@@ -121,10 +183,14 @@ export class AdminPolicyManagementComponent implements OnInit {
   }
 
   togglePolicy(policy: PolicyType): void {
-    this.policyService.togglePolicyTypeStatus(policy.id, !policy.isActive).subscribe({
+    const newActive = !policy.isActive;
+    this.policyService.togglePolicyTypeStatus(policy.id, newActive).subscribe({
       next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Updated', detail: `Policy type ${policy.isActive ? 'deactivated' : 'activated'}.` });
-        this.loadPolicies();
+        policy.isActive = newActive;
+        this.messageService.add({ severity: 'success', summary: 'Updated', detail: `Policy type ${newActive ? 'activated' : 'deactivated'}.` });
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not update policy status.' });
       }
     });
   }

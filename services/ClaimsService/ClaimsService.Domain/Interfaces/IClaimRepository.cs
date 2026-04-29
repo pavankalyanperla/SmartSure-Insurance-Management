@@ -10,6 +10,8 @@ public interface IClaimRepository
     Task<Claim> CreateAsync(Claim claim);
     Task<Claim> UpdateAsync(Claim claim);
     Task<ClaimDocument> AddDocumentAsync(ClaimDocument document);
+    Task<ClaimDocument?> GetDocumentByIdAsync(int documentId);
+    Task DeleteDocumentAsync(ClaimDocument document);
     Task<List<ClaimDocument>> GetDocumentsByClaimIdAsync(int claimId);
     Task<bool> SaveChangesAsync();
     Task<int> GetCountByStatusAsync(string status);

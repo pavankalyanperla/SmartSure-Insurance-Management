@@ -86,7 +86,7 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            FullName = dto.FullName.Trim(),
+            FullName = ToTitleCase(dto.FullName.Trim()),
             Email = normalizedEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Role = "CUSTOMER"
@@ -161,8 +161,50 @@ public class AuthService : IAuthService
         return _repository.GetUsersCountAsync();
     }
 
+    public Task<int> GetActiveUsersCountAsync()
+    {
+        return _repository.GetActiveUsersCountAsync();
+    }
+
     public Task<bool> UpdateUserStatusAsync(int userId, bool isActive)
     {
         return _repository.UpdateUserStatusAsync(userId, isActive);
     }
+
+    public async Task<OtpSendResultDto> SendPasswordResetOtpAsync(ForgotPasswordSendOtpDto dto)
+    {
+        var normalizedEmail = dto.Email.ToLower().Trim();
+        var user = await _repository.GetByEmailAsync(normalizedEmail);
+        if (user is null)
+            throw new InvalidOperationException("No account found with that email address.");
+
+        var otpCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        await _repository.UpsertOtpAsync(normalizedEmail, otpCode, DateTime.UtcNow.AddMinutes(15));
+
+        await _emailService.SendPasswordResetOtpEmailAsync(normalizedEmail, user.FullName, otpCode);
+        return new OtpSendResultDto { Message = "Password reset OTP sent to your email." };
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        var normalizedEmail = dto.Email.ToLower().Trim();
+
+        var otp = await _repository.GetLatestOtpAsync(normalizedEmail);
+        if (otp is null || otp.IsUsed)
+            throw new UnauthorizedAccessException("No active OTP found. Please request a new one.");
+
+        if (otp.ExpiresAt < DateTime.UtcNow)
+            throw new UnauthorizedAccessException("OTP has expired. Please request a new one.");
+
+        if (!string.Equals(otp.OtpCode, dto.OtpCode.Trim(), StringComparison.Ordinal))
+            throw new UnauthorizedAccessException("Invalid OTP code.");
+
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        await _repository.UpdatePasswordAsync(normalizedEmail, passwordHash);
+        await _repository.MarkOtpAsUsedAsync(otp.Id);
+    }
+
+    private static string ToTitleCase(string name) =>
+        string.Join(' ', name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => char.ToUpper(w[0]) + w[1..].ToLower()));
 }

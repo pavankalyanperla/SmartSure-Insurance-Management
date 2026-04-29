@@ -27,8 +27,7 @@ import {
   withI18nSupport,
   withIncrementalHydration,
   withNoHttpTransferCache
-} from "./chunk-QK372JM6.js";
-import "./chunk-3ZE77XV2.js";
+} from "./chunk-TSOPX6C6.js";
 import {
   DomEventsPlugin,
   DomRendererFactory2,
@@ -39,6 +38,7 @@ import {
   SharedStylesHost
 } from "./chunk-EW562D6F.js";
 import "./chunk-FURFMX5P.js";
+import "./chunk-3ZE77XV2.js";
 import {
   getDOM
 } from "./chunk-FSQM67WS.js";

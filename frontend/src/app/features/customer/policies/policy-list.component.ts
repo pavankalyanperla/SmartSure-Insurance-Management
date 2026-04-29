@@ -1,10 +1,9 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { PolicyService } from '../../../core/services/policy.service';
 import { Policy } from '../../../core/models/policy.models';
-import { FormsModule } from '@angular/forms';
-import { CurrencyPipe, DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-policy-list',
@@ -14,6 +13,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 })
 export class PolicyListComponent implements OnInit {
   private readonly policyService = inject(PolicyService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   isLoading = true;
   statusFilter = 'All';
@@ -25,12 +25,12 @@ export class PolicyListComponent implements OnInit {
       next: (policies) => {
         this.policies = policies;
         this.applyFilter();
-      },
-      complete: () => {
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -40,29 +40,17 @@ export class PolicyListComponent implements OnInit {
       this.filteredPolicies = [...this.policies];
       return;
     }
-    this.filteredPolicies = this.policies.filter((policy) => (policy.status || '').toLowerCase() === this.statusFilter.toLowerCase());
+    this.filteredPolicies = this.policies.filter(p => (p.status || '').toLowerCase() === this.statusFilter.toLowerCase());
   }
 
   statusClass(status: string): string {
     const key = (status || '').toLowerCase();
-    if (key === 'active') {
-      return 'badge-active';
-    }
-    if (key === 'draft') {
-      return 'badge-draft';
-    }
-    if (key === 'submitted') {
-      return 'badge-submitted';
-    }
-    if (key === 'underreview') {
-      return 'badge-underreview';
-    }
-    if (key === 'approved') {
-      return 'badge-approved';
-    }
-    if (key === 'rejected') {
-      return 'badge-rejected';
-    }
+    if (key === 'active') return 'badge-active';
+    if (key === 'draft') return 'badge-draft';
+    if (key === 'submitted') return 'badge-submitted';
+    if (key === 'underreview') return 'badge-underreview';
+    if (key === 'approved') return 'badge-approved';
+    if (key === 'rejected') return 'badge-rejected';
     return 'badge-closed';
   }
 }

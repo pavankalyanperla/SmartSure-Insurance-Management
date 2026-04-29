@@ -1,8 +1,30 @@
 <section class="page-content">
-  <div class="page-header"><h1>Users</h1><span class="badge badge-customer">{{ users.length }} Users</span></div>
+  <div class="page-header">
+    <h1>Users</h1>
+    <span class="badge badge-customer">{{ filteredUsers.length }} of {{ users.length }} Users</span>
+  </div>
+
+  <div class="form-card p-4 mb-3">
+    <label class="form-label">Search Users</label>
+    <div style="position:relative">
+      <i class="pi pi-search" style="position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:#9ca3af;pointer-events:none"></i>
+      <input
+        class="form-input"
+        style="padding-left:2.4rem"
+        [(ngModel)]="searchText"
+        (input)="applySearch()"
+        placeholder="Search by name or email..."
+      />
+    </div>
+  </div>
 
   @if (isLoading) {
     <div class="loading-container">Loading users...</div>
+  } @else if (errorMessage) {
+    <div class="empty-state">
+      <p>{{ errorMessage }}</p>
+      <button class="btn-primary" (click)="loadUsers()">Retry</button>
+    </div>
   } @else {
     <div class="data-table-container">
       <table class="w-full">
@@ -18,12 +40,10 @@
           </tr>
         </thead>
         <tbody>
-          @for (user of users; track user.userId) {
+          @for (user of filteredUsers; track $index) {
             <tr>
               <td>
-                <div class="user-avatar-circle">
-                  {{ user.fullName.charAt(0).toUpperCase() || 'U' }}
-                </div>
+                <div class="user-avatar-circle">{{ (user.fullName || '?')[0].toUpperCase() }}</div>
               </td>
               <td>{{ user.fullName }}</td>
               <td>{{ user.email }}</td>
@@ -31,13 +51,15 @@
               <td>{{ user.createdAt | date:'MMM d, yyyy' }}</td>
               <td><span class="badge" [class]="user.isActive ? 'badge badge-active' : 'badge badge-rejected'">{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>
               <td>
-                @if (user.isActive) {
-                  <button class="btn-danger" (click)="toggleStatus(user.userId, false)">Deactivate</button>
-                } @else {
-                  <button class="btn-success" (click)="toggleStatus(user.userId, true)">Activate</button>
-                }
+                <button [class]="user.isActive ? 'btn-danger' : 'btn-success'" (click)="toggleStatus(user.userId, !user.isActive)">
+                  {{ user.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
               </td>
             </tr>
+          } @empty {
+            <tr><td colspan="7" style="text-align:center;padding:2rem;color:#6b7280">
+              {{ searchText ? 'No users match your search.' : 'No users found.' }}
+            </td></tr>
           }
         </tbody>
       </table>

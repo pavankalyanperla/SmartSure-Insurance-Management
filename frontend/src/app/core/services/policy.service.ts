@@ -1,12 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 import { CreatePolicyRequest, Payment, Policy, PolicyType, PremiumCalculation, PremiumResponse } from '../models/policy.models';
 
 @Injectable({ providedIn: 'root' })
 export class PolicyService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = 'http://localhost:5000/gateway/policies';
+
+  private _adminTypesCache?: PolicyType[];
 
   getPolicyTypes(): Observable<PolicyType[]> {
     return this.http.get<PolicyType[]>(`${this.baseUrl}/types`);
@@ -41,22 +43,28 @@ export class PolicyService {
   }
 
   getAdminPolicyTypes(): Observable<PolicyType[]> {
-    return this.http.get<PolicyType[]>(`${this.baseUrl}/admin/types`);
+    if (this._adminTypesCache !== undefined) return of(this._adminTypesCache);
+    return this.http.get<PolicyType[]>(`${this.baseUrl}/admin/types`)
+      .pipe(tap(d => this._adminTypesCache = d));
   }
 
   createPolicyType(data: Partial<PolicyType>): Observable<PolicyType> {
+    this._adminTypesCache = undefined;
     return this.http.post<PolicyType>(`${this.baseUrl}/admin/types`, data);
   }
 
   updatePolicyType(id: number | string, data: Partial<PolicyType>): Observable<PolicyType> {
+    this._adminTypesCache = undefined;
     return this.http.put<PolicyType>(`${this.baseUrl}/admin/types/${id}`, data);
   }
 
   deletePolicyType(id: number | string): Observable<unknown> {
+    this._adminTypesCache = undefined;
     return this.http.delete(`${this.baseUrl}/admin/types/${id}`);
   }
 
   togglePolicyTypeStatus(id: number | string, isActive: boolean): Observable<unknown> {
+    this._adminTypesCache = undefined;
     const params = new HttpParams().set('isActive', String(isActive));
     return this.http.put(`${this.baseUrl}/admin/types/${id}/toggle`, null, { params });
   }

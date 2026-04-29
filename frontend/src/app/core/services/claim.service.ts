@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Claim, CreateClaimRequest } from '../models/claim.models';
+import { Claim, ClaimDocument, CreateClaimRequest } from '../models/claim.models';
 
 @Injectable({ providedIn: 'root' })
 export class ClaimService {
@@ -16,10 +16,14 @@ export class ClaimService {
     return this.http.post<Claim>(`${this.baseUrl}/${id}/submit`, {});
   }
 
-  uploadDocument(id: number | string, file: File): Observable<unknown> {
+  uploadDocument(id: number | string, file: File): Observable<ClaimDocument> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.baseUrl}/${id}/documents`, formData);
+    return this.http.post<ClaimDocument>(`${this.baseUrl}/${id}/documents`, formData);
+  }
+
+  deleteDocument(claimId: number | string, documentId: number | string): Observable<unknown> {
+    return this.http.delete(`${this.baseUrl}/${claimId}/documents/${documentId}`);
   }
 
   getMyClaims(): Observable<Claim[]> {

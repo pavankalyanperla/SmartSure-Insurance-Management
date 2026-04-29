@@ -129,10 +129,35 @@ public class ClaimAppService : IClaimService
             FileName = created.FileName,
             FileType = created.FileType,
             FileSize = created.FileSize,
-            UploadedAt = created.UploadedAt
+            UploadedAt = created.UploadedAt,
+            FileUrl = "/" + created.FilePath.Replace("wwwroot/", "").Replace("wwwroot\\", "").TrimStart('/', '\\').Replace("\\", "/")
         };
     }
 
+
+    public async Task DeleteDocumentAsync(int claimId, int documentId, int customerId)
+    {
+        var claim = await _repository.GetByIdAsync(claimId)
+            ?? throw new InvalidOperationException("Claim not found.");
+
+        if (claim.CustomerId != customerId)
+            throw new UnauthorizedAccessException("You are not allowed to modify this claim.");
+
+        if (claim.Status != Domain.Enums.ClaimStatus.Draft)
+            throw new InvalidOperationException("Documents can only be removed from draft claims.");
+
+        var document = await _repository.GetDocumentByIdAsync(documentId)
+            ?? throw new InvalidOperationException("Document not found.");
+
+        if (document.ClaimId != claimId)
+            throw new InvalidOperationException("Document does not belong to this claim.");
+
+        // Delete physical file if it exists
+        if (!string.IsNullOrEmpty(document.FilePath) && File.Exists(document.FilePath))
+            File.Delete(document.FilePath);
+
+        await _repository.DeleteDocumentAsync(document);
+    }
 
     public async Task<object> GetClaimsStatsAsync()
     {
@@ -176,7 +201,8 @@ public class ClaimAppService : IClaimService
                     FileName = d.FileName,
                     FileType = d.FileType,
                     FileSize = d.FileSize,
-                    UploadedAt = d.UploadedAt
+                    UploadedAt = d.UploadedAt,
+                    FileUrl = "/" + d.FilePath.Replace("wwwroot/", "").Replace("wwwroot\\", "").TrimStart('/', '\\').Replace("\\", "/")
                 })
                 .ToList()
         };

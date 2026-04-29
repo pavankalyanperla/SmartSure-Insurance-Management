@@ -23,7 +23,8 @@ public class PolicyAppService : IPolicyService
             Id = t.Id,
             Name = t.Name,
             Description = t.Description,
-            BaseAmount = t.BaseAmount
+            BaseAmount = t.BaseAmount,
+            IsActive = t.IsActive
         }).ToList();
     }
 
@@ -36,7 +37,8 @@ public class PolicyAppService : IPolicyService
             Id = type.Id,
             Name = type.Name,
             Description = type.Description,
-            BaseAmount = type.BaseAmount
+            BaseAmount = type.BaseAmount,
+            IsActive = type.IsActive
         };
     }
 

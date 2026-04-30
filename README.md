@@ -47,6 +47,8 @@ Auth behavior:
 
 ## How To Run
 
+### Local Development
+
 Start everything from the repository root:
 
 ```powershell
@@ -59,9 +61,59 @@ Skip rebuilds for faster startup:
 .\start-all-services.ps1 -NoBuild
 ```
 
-Gateway Swagger UI:
+Gateway Swagger UI: `http://localhost:5000/swagger`
 
-- `http://localhost:5000/swagger`
+---
+
+## Docker Deployment
+
+### Prerequisites
+- Docker Desktop 4.x+ running in **Linux containers** mode
+- At least 8 GB RAM available for Docker
+
+### Quick Start
+
+```bash
+# Build all images and start every service
+docker-compose up --build
+
+# Start without rebuilding (images already built)
+docker-compose up
+
+# Start in the background (detached)
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# Stop and wipe volumes (clean slate)
+docker-compose down -v
+```
+
+### Service URLs (Docker)
+
+| Service | URL |
+|---|---|
+| Angular Frontend | http://localhost:4200 |
+| API Gateway | http://localhost:5000 |
+| Gateway Swagger | http://localhost:5000/swagger |
+| RabbitMQ Dashboard | http://localhost:15672 |
+| SQL Server | localhost,1433 |
+
+### RabbitMQ Credentials (Docker)
+- Username: `smartsure`
+- Password: `smartsure123`
+
+### SQL Server Credentials (Docker)
+- Server: `localhost,1433`
+- Username: `sa`
+- Password: `SmartSure@2025!`
+
+### How It Works
+- Each .NET service reads its connection string from the `ConnectionStrings__DefaultConnection` environment variable injected by docker-compose.
+- The API Gateway loads `ocelot.Docker.json` (Docker service-name hostnames) instead of `ocelot.json` (localhost) when `ASPNETCORE_ENVIRONMENT=Docker`.
+- AdminService reads downstream service base URLs from `ServiceUrls__*` environment variables so it calls `identity-service:5265`, `policy-service:5145`, and `claims-service:5084` inside the Docker network.
+- The Angular frontend is served by Nginx on port 80 (mapped to 4200). API calls to `/gateway/` are proxied by Nginx to the `api-gateway` container.
 
 ## Startup Script
 

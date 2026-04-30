@@ -19,6 +19,10 @@ public class AdminAppService : IAdminService
     private readonly ILogger<AdminAppService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
+    private string IdentityBase => _config["ServiceUrls:IdentityService"] ?? "http://localhost:5265";
+    private string PolicyBase  => _config["ServiceUrls:PolicyService"]   ?? "http://localhost:5145";
+    private string ClaimsBase  => _config["ServiceUrls:ClaimsService"]   ?? "http://localhost:5084";
+
     // Case-insensitive so camelCase JSON from downstream services maps to PascalCase C# DTOs
     private static readonly JsonSerializerOptions CaseInsensitiveOptions = new()
     {
@@ -45,9 +49,9 @@ public class AdminAppService : IAdminService
         var token = GetJwtToken();
 
         // Fire all three downstream calls in parallel to avoid sequential wait
-        var userTask    = GetWithAuthAsync("http://localhost:5265/api/auth/admin/users/count", token);
-        var policyTask  = GetWithAuthAsync("http://localhost:5145/api/policies/admin/count", token);
-        var claimsTask  = GetWithAuthAsync("http://localhost:5084/api/claims/admin/stats", token);
+        var userTask    = GetWithAuthAsync($"{IdentityBase}/api/auth/admin/users/count", token);
+        var policyTask  = GetWithAuthAsync($"{PolicyBase}/api/policies/admin/count", token);
+        var claimsTask  = GetWithAuthAsync($"{ClaimsBase}/api/claims/admin/stats", token);
         await Task.WhenAll(userTask, policyTask, claimsTask);
 
         try
@@ -101,7 +105,7 @@ public class AdminAppService : IAdminService
         try
         {
             var token = GetJwtToken();
-            var body = await GetWithAuthAsync("http://localhost:5084/api/claims", token);
+            var body = await GetWithAuthAsync($"{ClaimsBase}/api/claims", token);
             if (!string.IsNullOrEmpty(body))
             {
                 var all = JsonSerializer.Deserialize<List<ClaimsApiItem>>(body, CaseInsensitiveOptions);
@@ -120,7 +124,7 @@ public class AdminAppService : IAdminService
         try
         {
             var token = GetJwtToken();
-            var body = await GetWithAuthAsync("http://localhost:5084/api/claims", token);
+            var body = await GetWithAuthAsync($"{ClaimsBase}/api/claims", token);
             if (!string.IsNullOrEmpty(body))
             {
                 var all = JsonSerializer.Deserialize<List<ClaimsApiItem>>(body, CaseInsensitiveOptions);
@@ -137,7 +141,7 @@ public class AdminAppService : IAdminService
         try
         {
             var token = GetJwtToken();
-            var url     = $"http://localhost:5084/api/claims/{dto.ClaimId}/status";
+            var url     = $"{ClaimsBase}/api/claims/{dto.ClaimId}/status";
             var payload = JsonSerializer.Serialize(new { status = dto.Status, adminNote = dto.AdminNote });
 
             using var request = new HttpRequestMessage(HttpMethod.Put, url)
@@ -174,7 +178,7 @@ public class AdminAppService : IAdminService
         try
         {
             var token = GetJwtToken();
-            var body = await GetWithAuthAsync("http://localhost:5265/api/auth/admin/users", token);
+            var body = await GetWithAuthAsync($"{IdentityBase}/api/auth/admin/users", token);
             if (!string.IsNullOrEmpty(body))
             {
                 // IdentityService returns { id, fullName, … } (not userId), so use a local shape
@@ -210,7 +214,7 @@ public class AdminAppService : IAdminService
         try
         {
             var token   = GetJwtToken();
-            var url     = $"http://localhost:5265/api/auth/admin/users/{userId}/status";
+            var url     = $"{IdentityBase}/api/auth/admin/users/{userId}/status";
             var payload = JsonSerializer.Serialize(new { isActive = dto.IsActive });
 
             using var request = new HttpRequestMessage(HttpMethod.Put, url)

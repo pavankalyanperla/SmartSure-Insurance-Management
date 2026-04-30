@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    ports:
+      - "1433:1433"
+
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  identity-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+
+  policy-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+
+  claims-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+
+  admin-service:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+
+  api-gateway:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker

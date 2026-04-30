@@ -56,11 +56,7 @@
               <td><input class="form-input" [value]="claim.adminNote || ''" readonly style="font-size:.82rem"></td>
               <td>
                 @if (claim.status === 'Submitted' || claim.status === 'UnderReview') {
-                  <div class="flex gap-2">
-                    <button class="btn-review" (click)="openReviewPanel(claim)">Review</button>
-                    <button class="btn-success" (click)="approveClaim(claim.claimId)">Approve</button>
-                    <button class="btn-danger" (click)="rejectClaim(claim.claimId)">Reject</button>
-                  </div>
+                  <button class="btn-review" (click)="openReviewPanel(claim)">Review</button>
                 } @else {
                   <span class="badge" [class]="'badge ' + statusClass(claim.status)">{{ claim.status }}</span>
                 }

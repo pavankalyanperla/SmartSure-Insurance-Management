@@ -1,0 +1,164 @@
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/auth/register",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/register",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/login",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/login",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/send-otp",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/send-otp",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/verify-register",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/verify-register",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/resend-otp",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/resend-otp",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/forgot-password/send-otp",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/forgot-password/send-otp",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/forgot-password/reset",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/forgot-password/reset",
+      "UpstreamHttpMethod": [ "POST" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "identity-service", "Port": 5265 }
+      ],
+      "UpstreamPathTemplate": "/gateway/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "SwaggerKey": "identity"
+    },
+    {
+      "DownstreamPathTemplate": "/api/policies/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "policy-service", "Port": 5145 }
+      ],
+      "UpstreamPathTemplate": "/gateway/policies/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "SwaggerKey": "policy"
+    },
+    {
+      "DownstreamPathTemplate": "/api/claims/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "claims-service", "Port": 5084 }
+      ],
+      "UpstreamPathTemplate": "/gateway/claims/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "SwaggerKey": "claims"
+    },
+    {
+      "DownstreamPathTemplate": "/api/admin/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "admin-service", "Port": 5073 }
+      ],
+      "UpstreamPathTemplate": "/gateway/admin/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "SwaggerKey": "admin"
+    }
+  ],
+  "SwaggerEndPoints": [
+    {
+      "Key": "identity",
+      "Config": [
+        {
+          "Name": "SmartSure - Identity Service",
+          "Version": "v1",
+          "Url": "http://identity-service:5265/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "policy",
+      "Config": [
+        {
+          "Name": "SmartSure - Policy Service",
+          "Version": "v1",
+          "Url": "http://policy-service:5145/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "claims",
+      "Config": [
+        {
+          "Name": "SmartSure - Claims Service",
+          "Version": "v1",
+          "Url": "http://claims-service:5084/swagger/v1/swagger.json"
+        }
+      ]
+    },
+    {
+      "Key": "admin",
+      "Config": [
+        {
+          "Name": "SmartSure - Admin Service",
+          "Version": "v1",
+          "Url": "http://admin-service:5073/swagger/v1/swagger.json"
+        }
+      ]
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:5000"
+  }
+}

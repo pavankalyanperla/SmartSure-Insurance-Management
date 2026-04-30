@@ -1,0 +1,205 @@
+version: '3.8'
+
+services:
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: smartsure-sqlserver
+    environment:
+      SA_PASSWORD: "SmartSure@2025!"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - smartsure-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P SmartSure@2025! -Q 'SELECT 1' -No"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: smartsure-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: smartsure
+      RABBITMQ_DEFAULT_PASS: smartsure123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - smartsure-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  identity-service:
+    build:
+      context: ./services/IdentityService
+      dockerfile: Dockerfile
+    container_name: smartsure-identity
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:5265
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SmartSure_IdentityDB;User Id=sa;Password=SmartSure@2025!;TrustServerCertificate=True;Encrypt=False;"
+      JwtSettings__SecretKey: "SmartSure@SuperSecretKey#2025!XyZ987"
+      JwtSettings__Issuer: "SmartSure"
+      JwtSettings__Audience: "SmartSureClients"
+      JwtSettings__ExpiryHours: "8"
+      EmailSettings__SmtpHost: "smtp.gmail.com"
+      EmailSettings__SmtpPort: "587"
+      EmailSettings__FromEmail: "kalyanpavan7578@gmail.com"
+      EmailSettings__AppPassword: "zzoy tmvu ykri pnbh"
+      EmailSettings__FromName: "SmartSure Insurance"
+      EmailSettings__UseAuthentication: "true"
+      EmailSettings__UseStartTls: "true"
+    ports:
+      - "5265:5265"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - smartsure-network
+    restart: on-failure
+
+  policy-service:
+    build:
+      context: ./services/PolicyService
+      dockerfile: Dockerfile
+    container_name: smartsure-policy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:5145
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SmartSure_PolicyDB;User Id=sa;Password=SmartSure@2025!;TrustServerCertificate=True;Encrypt=False;"
+      JwtSettings__SecretKey: "SmartSure@SuperSecretKey#2025!XyZ987"
+      JwtSettings__Issuer: "SmartSure"
+      JwtSettings__Audience: "SmartSureClients"
+      JwtSettings__ExpiryHours: "8"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "smartsure"
+      RabbitMQ__Password: "smartsure123"
+    ports:
+      - "5145:5145"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - smartsure-network
+    restart: on-failure
+
+  claims-service:
+    build:
+      context: ./services/ClaimsService
+      dockerfile: Dockerfile
+    container_name: smartsure-claims
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:5084
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SmartSure_ClaimsDB;User Id=sa;Password=SmartSure@2025!;TrustServerCertificate=True;Encrypt=False;"
+      JwtSettings__SecretKey: "SmartSure@SuperSecretKey#2025!XyZ987"
+      JwtSettings__Issuer: "SmartSure"
+      JwtSettings__Audience: "SmartSureClients"
+      JwtSettings__ExpiryHours: "8"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "smartsure"
+      RabbitMQ__Password: "smartsure123"
+    ports:
+      - "5084:5084"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - smartsure-network
+    restart: on-failure
+
+  admin-service:
+    build:
+      context: ./services/AdminService
+      dockerfile: Dockerfile
+    container_name: smartsure-admin
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:5073
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SmartSure_AdminDB;User Id=sa;Password=SmartSure@2025!;TrustServerCertificate=True;Encrypt=False;"
+      JwtSettings__SecretKey: "SmartSure@SuperSecretKey#2025!XyZ987"
+      JwtSettings__Issuer: "SmartSure"
+      JwtSettings__Audience: "SmartSureClients"
+      JwtSettings__ExpiryHours: "8"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "smartsure"
+      RabbitMQ__Password: "smartsure123"
+      ServiceUrls__IdentityService: "http://identity-service:5265"
+      ServiceUrls__PolicyService: "http://policy-service:5145"
+      ServiceUrls__ClaimsService: "http://claims-service:5084"
+    ports:
+      - "5073:5073"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+      policy-service:
+        condition: service_started
+      claims-service:
+        condition: service_started
+    networks:
+      - smartsure-network
+    restart: on-failure
+
+  api-gateway:
+    build:
+      context: ./gateway/ApiGateway
+      dockerfile: Dockerfile
+    container_name: smartsure-gateway
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:5000
+      JwtSettings__SecretKey: "SmartSure@SuperSecretKey#2025!XyZ987"
+      JwtSettings__Issuer: "SmartSure"
+      JwtSettings__Audience: "SmartSureClients"
+    ports:
+      - "5000:5000"
+    depends_on:
+      - identity-service
+      - policy-service
+      - claims-service
+      - admin-service
+    networks:
+      - smartsure-network
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartsure-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - smartsure-network
+    restart: on-failure
+
+networks:
+  smartsure-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  rabbitmq_data:

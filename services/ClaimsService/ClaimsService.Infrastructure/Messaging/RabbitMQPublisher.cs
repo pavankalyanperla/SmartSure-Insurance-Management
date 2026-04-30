@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Text;
@@ -8,19 +9,24 @@ namespace ClaimsService.Infrastructure.Messaging;
 public class RabbitMQPublisher
 {
     private readonly ILogger<RabbitMQPublisher> _logger;
+    private readonly IConfiguration _config;
 
-    public RabbitMQPublisher(ILogger<RabbitMQPublisher> logger)
+    public RabbitMQPublisher(ILogger<RabbitMQPublisher> logger, IConfiguration config)
     {
         _logger = logger;
+        _config = config;
     }
 
     public void PublishClaimSubmitted(int claimId, int customerId, string claimNumber)
     {
         try
         {
+            var rmq = _config.GetSection("RabbitMQ");
             var factory = new ConnectionFactory
             {
-                HostName = "localhost"
+                HostName = rmq["Host"] ?? "localhost",
+                UserName = rmq["Username"] ?? "guest",
+                Password = rmq["Password"] ?? "guest"
             };
 
             using var connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
@@ -33,14 +39,7 @@ public class RabbitMQPublisher
             channel.QueueBindAsync(queue: "claim.submitted", exchange: "smartsure", routingKey: "claim.submitted")
                 .GetAwaiter().GetResult();
 
-            var payload = new
-            {
-                claimId,
-                customerId,
-                claimNumber,
-                timestamp = DateTime.UtcNow
-            };
-
+            var payload = new { claimId, customerId, claimNumber, timestamp = DateTime.UtcNow };
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payload));
             channel.BasicPublishAsync(exchange: "smartsure", routingKey: "claim.submitted", body: body)
                 .GetAwaiter().GetResult();

@@ -10,7 +10,10 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
+var ocelotConfig = builder.Environment.EnvironmentName == "Docker"
+    ? "ocelot.Docker.json"
+    : "ocelot.json";
+builder.Configuration.AddJsonFile(ocelotConfig, optional: false, reloadOnChange: true);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)

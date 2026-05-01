@@ -47,34 +47,44 @@ public class PolicyAppService : IPolicyService
         var policyType = await _repo.GetPolicyTypeByIdAsync(dto.PolicyTypeId)
             ?? throw new InvalidOperationException("Policy type not found.");
 
-        var durationMonths = ((dto.EndDate.Year - dto.StartDate.Year) * 12)
-                           + dto.EndDate.Month - dto.StartDate.Month;
+        var totalDays = (dto.EndDate - dto.StartDate).TotalDays;
+        var years = (int)Math.Ceiling(totalDays / 365.0);
 
         decimal ageFactor = dto.Age switch
         {
-            <= 25 => 1.1m,
-            <= 40 => 1.0m,
-            <= 55 => 1.2m,
-            _ => 1.5m
+            <= 25 => 0.10m,
+            <= 40 => 0.00m,
+            <= 55 => 0.20m,
+            _     => 0.50m
         };
 
-        decimal durationFactor = durationMonths switch
+        // Year 1 → 0.10, Year 2 → 1.10, Year 3 → 2.10, etc.
+        decimal durationFactor = (years - 1) + 0.10m;
+
+        string ageGroup = dto.Age switch
         {
-            <= 6 => 1.0m,
-            <= 12 => 1.05m,
-            <= 24 => 1.1m,
-            _ => 1.2m
+            <= 25 => "18-25 years",
+            <= 40 => "26-40 years",
+            <= 55 => "41-55 years",
+            _     => "56+ years"
         };
 
-        decimal baseAmount = policyType.BaseAmount;
-        decimal finalAmount = baseAmount * ageFactor * durationFactor;
+        decimal baseAmount          = policyType.BaseAmount;
+        decimal ageFactorAmount     = Math.Round(baseAmount * ageFactor, 2);
+        decimal durationFactorAmount = Math.Round(baseAmount * durationFactor, 2);
+        decimal finalAmount          = baseAmount + ageFactorAmount + durationFactorAmount;
 
         return new PremiumResponseDto
         {
-            BaseAmount = baseAmount,
-            AgeFactor = ageFactor,
-            DurationFactor = durationFactor,
-            FinalAmount = Math.Round(finalAmount, 2)
+            BaseAmount           = baseAmount,
+            AgeFactor            = ageFactor,
+            AgeFactorAmount      = ageFactorAmount,
+            DurationFactor       = durationFactor,
+            DurationFactorAmount = durationFactorAmount,
+            DurationYears        = years,
+            FinalAmount          = Math.Round(finalAmount, 2),
+            AgeGroup             = ageGroup,
+            FormulaExplanation   = $"{baseAmount:0} + {ageFactorAmount:0} + {durationFactorAmount:0} = {Math.Round(finalAmount, 0)}"
         };
     }
 
@@ -171,6 +181,67 @@ public class PolicyAppService : IPolicyService
     {
         var payments = await _repo.GetPaymentsByUserIdAsync(userId);
         return payments.Select(MapPaymentToResponse).ToList();
+    }
+
+    public async Task<RenewalResponseDto> RenewPolicyAsync(int policyId, RenewPolicyDto dto, int userId)
+    {
+        var policy = await _repo.GetPolicyByIdAsync(policyId)
+            ?? throw new KeyNotFoundException($"Policy {policyId} not found");
+
+        if (policy.UserId != userId)
+            throw new UnauthorizedAccessException("Not your policy");
+
+        if (policy.Status != PolicyStatus.Active && policy.Status != PolicyStatus.Expired)
+            throw new InvalidOperationException("Only Active or Expired policies can be renewed");
+
+        var policyType = await _repo.GetPolicyTypeByIdAsync(policy.PolicyTypeId)
+            ?? throw new KeyNotFoundException("Policy type not found");
+
+        var newStartDate = policy.EndDate < DateTime.UtcNow
+            ? DateTime.UtcNow
+            : policy.EndDate;
+        var newEndDate = newStartDate.AddYears(1);
+
+        decimal ageFactor = dto.Age <= 25 ? 0.10m :
+                            dto.Age <= 40 ? 0.00m :
+                            dto.Age <= 55 ? 0.20m : 0.50m;
+        decimal durationFactor = 0.10m;
+        decimal newPremium = policyType.BaseAmount
+                           + (policyType.BaseAmount * ageFactor)
+                           + (policyType.BaseAmount * durationFactor);
+        newPremium = Math.Round(newPremium, 2);
+
+        policy.StartDate    = newStartDate;
+        policy.EndDate      = newEndDate;
+        policy.PremiumAmount = newPremium;
+        policy.Status       = PolicyStatus.Active;
+        policy.IsRenewed    = true;
+        policy.RenewalCount += 1;
+        await _repo.UpdatePolicyAsync(policy);
+
+        var transactionId = $"TXN-RENEW-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        await _repo.CreatePaymentAsync(new Payment
+        {
+            PolicyId      = policyId,
+            UserId        = userId,
+            Amount        = newPremium,
+            PaymentMethod = "Online",
+            Status        = "Success",
+            TransactionId = transactionId,
+            PaymentDate   = DateTime.UtcNow
+        });
+
+        return new RenewalResponseDto
+        {
+            PolicyId         = policyId,
+            PolicyNumber     = policy.PolicyNumber,
+            NewStartDate     = newStartDate,
+            NewEndDate       = newEndDate,
+            NewPremiumAmount = newPremium,
+            TransactionId    = transactionId,
+            RenewalCount     = policy.RenewalCount,
+            Message          = $"Policy renewed successfully for 1 year. New expiry: {newEndDate:MMM dd, yyyy}"
+        };
     }
 
     private static PolicyResponseDto MapToResponse(Policy policy, string typeName) => new()

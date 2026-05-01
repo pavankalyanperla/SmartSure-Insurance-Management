@@ -4,6 +4,7 @@ using AdminService.Domain.Interfaces;
 using AdminService.Infrastructure.Data;
 using AdminService.Infrastructure.Messaging;
 using AdminService.Infrastructure.Repositories;
+using AdminService.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -56,6 +57,7 @@ builder.Services.AddAuthorization();
 
 // Register repositories and services
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<INotificationPublisher, NotificationPublisher>();
 builder.Services.AddScoped<IAdminService, AdminAppService>();
 
 // Register HttpClient

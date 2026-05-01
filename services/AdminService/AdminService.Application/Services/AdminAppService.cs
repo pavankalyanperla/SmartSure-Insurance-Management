@@ -18,6 +18,7 @@ public class AdminAppService : IAdminService
     private readonly IConfiguration _config;
     private readonly ILogger<AdminAppService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly INotificationPublisher _notificationPublisher;
 
     private string IdentityBase => _config["ServiceUrls:IdentityService"] ?? "http://localhost:5265";
     private string PolicyBase  => _config["ServiceUrls:PolicyService"]   ?? "http://localhost:5145";
@@ -34,13 +35,15 @@ public class AdminAppService : IAdminService
         HttpClient httpClient,
         IConfiguration config,
         ILogger<AdminAppService> logger,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        INotificationPublisher notificationPublisher)
     {
         _repository = repository;
         _httpClient = httpClient;
         _config = config;
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
+        _notificationPublisher = notificationPublisher;
     }
 
     public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
@@ -141,6 +144,31 @@ public class AdminAppService : IAdminService
         try
         {
             var token = GetJwtToken();
+
+            // 1. Fetch claim details before update so we have claimNumber, customerId, oldStatus
+            string claimNumber = string.Empty;
+            int    customerId  = 0;
+            string oldStatus   = string.Empty;
+            try
+            {
+                var claimBody = await GetWithAuthAsync($"{ClaimsBase}/api/claims/{dto.ClaimId}", token);
+                if (!string.IsNullOrEmpty(claimBody))
+                {
+                    var detail = JsonSerializer.Deserialize<ClaimsDetailItem>(claimBody, CaseInsensitiveOptions);
+                    if (detail != null)
+                    {
+                        claimNumber = detail.ClaimNumber;
+                        customerId  = detail.CustomerId;
+                        oldStatus   = detail.Status;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Could not fetch claim details before status update: {Message}", ex.Message);
+            }
+
+            // 2. Update the claim status in ClaimsService (existing logic)
             var url     = $"{ClaimsBase}/api/claims/{dto.ClaimId}/status";
             var payload = JsonSerializer.Serialize(new { status = dto.Status, adminNote = dto.AdminNote });
 
@@ -163,12 +191,71 @@ public class AdminAppService : IAdminService
                 CreatedAt  = DateTime.UtcNow
             });
 
+            // 3. Publish email notification (fire-and-forget style, never blocks the response)
+            if (!string.IsNullOrEmpty(claimNumber) && customerId > 0)
+            {
+                _ = PublishClaimNotificationAsync(token, dto, claimNumber, customerId, oldStatus);
+            }
+
             return new ClaimReviewDto { ClaimId = dto.ClaimId };
         }
         catch (Exception ex)
         {
             _logger.LogError("Failed to update claim status: {Message}", ex.Message);
             throw;
+        }
+    }
+
+    private async Task PublishClaimNotificationAsync(
+        string? token, UpdateClaimStatusDto dto,
+        string claimNumber, int customerId, string oldStatus)
+    {
+        try
+        {
+            // Get customer email + name from IdentityService
+            string customerEmail = string.Empty;
+            string customerName  = string.Empty;
+            try
+            {
+                var userBody = await GetWithAuthAsync($"{IdentityBase}/api/auth/admin/users/{customerId}", token);
+                if (!string.IsNullOrEmpty(userBody))
+                {
+                    var user = JsonSerializer.Deserialize<IdentityUserItem>(userBody, CaseInsensitiveOptions);
+                    if (user != null)
+                    {
+                        customerEmail = user.Email;
+                        customerName  = user.FullName;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Could not fetch user info for notification: {Message}", ex.Message);
+            }
+
+            if (string.IsNullOrEmpty(customerEmail))
+            {
+                _logger.LogWarning("Skipping notification for claim {ClaimId} — customer email not found", dto.ClaimId);
+                return;
+            }
+
+            var notification = new ClaimStatusNotificationDto
+            {
+                ClaimId       = dto.ClaimId,
+                ClaimNumber   = claimNumber,
+                CustomerEmail = customerEmail,
+                CustomerName  = customerName,
+                OldStatus     = oldStatus,
+                NewStatus     = dto.Status,
+                AdminNote     = dto.AdminNote ?? string.Empty,
+                ChangedAt     = DateTime.UtcNow
+            };
+
+            await _notificationPublisher.PublishClaimStatusChangedAsync(notification);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Failed to publish claim status notification: {Message}", ex.Message);
         }
     }
 
@@ -349,6 +436,14 @@ public class AdminAppService : IAdminService
         AdminNote    = c.AdminNote,
         CreatedAt    = c.CreatedAt
     };
+
+    private sealed class ClaimsDetailItem
+    {
+        public int    Id          { get; set; }
+        public string ClaimNumber { get; set; } = string.Empty;
+        public int    CustomerId  { get; set; }
+        public string Status      { get; set; } = string.Empty;
+    }
 
     // Matches the shape ClaimsService actually returns (id, not claimId)
     private sealed class ClaimsApiItem

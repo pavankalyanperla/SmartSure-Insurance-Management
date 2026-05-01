@@ -145,6 +145,34 @@ public class PolicyController : ControllerBase
         }
     }
 
+    [HttpPost("{id}/renew")]
+    public async Task<IActionResult> RenewPolicy(int id, [FromBody] RenewPolicyDto dto)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+
+        if (!int.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+
+        try
+        {
+            var result = await _policyService.RenewPolicyAsync(id, dto, userId);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("admin/count")]
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> GetAdminPolicyCount()

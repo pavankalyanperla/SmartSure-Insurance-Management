@@ -67,125 +67,157 @@ public class PolicyServiceTests
         result.Should().BeNull();
     }
 
-    // ── CalculatePremium – age factors ────────────────────────────────────────
+    // ── CalculatePremium – age factors (additive formula) ────────────────────
 
     [Test]
-    public async Task CalculatePremium_AgeUnder25_AppliesAgeFactor_1_1()
+    public async Task CalculatePremium_AgeUnder25_AppliesAgeFactor_0_10()
     {
+        // Age 21, 1 year: 5000 + 5000*0.10 + 5000*0.10 = 6000
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
-        var start = new DateTime(2025, 1, 1);
-        var end   = start.AddMonths(3); // 3 months → durationFactor 1.0
-
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 20, StartDate = start, EndDate = end
+            PolicyTypeId = 1, Age = 21,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2026, 1, 1) // exactly 1 year
         });
 
-        result.AgeFactor.Should().Be(1.1m);
+        result.AgeFactor.Should().Be(0.10m);
+        result.AgeGroup.Should().Be("18-25 years");
         result.BaseAmount.Should().Be(5000);
-        result.FinalAmount.Should().Be(Math.Round(5000 * 1.1m * 1.0m, 2));
+        result.AgeFactorAmount.Should().Be(500m);
+        result.DurationYears.Should().Be(1);
+        result.DurationFactor.Should().Be(0.10m);
+        result.DurationFactorAmount.Should().Be(500m);
+        result.FinalAmount.Should().Be(6000m);
+        result.FormulaExplanation.Should().Contain("6000");
     }
 
     [Test]
-    public async Task CalculatePremium_AgeBetween25And40_AppliesAgeFactor_1_0()
+    public async Task CalculatePremium_AgeBetween26And40_AppliesAgeFactor_0_00()
     {
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 30, StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 4, 1)
+            PolicyTypeId = 1, Age = 30,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2026, 1, 1)
         });
 
-        result.AgeFactor.Should().Be(1.0m);
+        result.AgeFactor.Should().Be(0.00m);
+        result.AgeGroup.Should().Be("26-40 years");
+        result.AgeFactorAmount.Should().Be(0m);
+        // final = 5000 + 0 + 500 = 5500
+        result.FinalAmount.Should().Be(5500m);
     }
 
     [Test]
-    public async Task CalculatePremium_AgeBetween41And55_AppliesAgeFactor_1_2()
+    public async Task CalculatePremium_AgeBetween41And55_AppliesAgeFactor_0_20()
     {
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 50, StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 4, 1)
+            PolicyTypeId = 1, Age = 50,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2026, 1, 1)
         });
 
-        result.AgeFactor.Should().Be(1.2m);
+        result.AgeFactor.Should().Be(0.20m);
+        result.AgeGroup.Should().Be("41-55 years");
+        result.AgeFactorAmount.Should().Be(1000m);
+        // final = 5000 + 1000 + 500 = 6500
+        result.FinalAmount.Should().Be(6500m);
     }
 
     [Test]
-    public async Task CalculatePremium_AgeOver55_AppliesAgeFactor_1_5()
+    public async Task CalculatePremium_AgeOver55_AppliesAgeFactor_0_50()
     {
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 60, StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 4, 1)
+            PolicyTypeId = 1, Age = 60,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2026, 1, 1)
         });
 
-        result.AgeFactor.Should().Be(1.5m);
+        result.AgeFactor.Should().Be(0.50m);
+        result.AgeGroup.Should().Be("56+ years");
+        result.AgeFactorAmount.Should().Be(2500m);
+        // final = 5000 + 2500 + 500 = 8000
+        result.FinalAmount.Should().Be(8000m);
     }
 
-    // ── CalculatePremium – duration factors ───────────────────────────────────
+    // ── CalculatePremium – duration factors (years-based) ─────────────────────
 
     [Test]
-    public async Task CalculatePremium_DurationUpTo6Months_AppliesDurationFactor_1_0()
+    public async Task CalculatePremium_Duration1Year_AppliesDurationFactor_0_10()
     {
+        // 3 months → ceil(90/365) = 1 year → factor = 0.10
         var pt = new PolicyType { Id = 1, BaseAmount = 4000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 30, StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 4, 1) // 3 months
+            PolicyTypeId = 1, Age = 30,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 4, 1)
         });
 
-        result.DurationFactor.Should().Be(1.0m);
+        result.DurationYears.Should().Be(1);
+        result.DurationFactor.Should().Be(0.10m);
     }
 
     [Test]
-    public async Task CalculatePremium_Duration6To12Months_AppliesDurationFactor_1_05()
+    public async Task CalculatePremium_Duration9Months_StillCountsAs1Year()
     {
+        // 9 months → ceil(273/365) = 1 year → factor = 0.10
         var pt = new PolicyType { Id = 1, BaseAmount = 4000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 30, StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 10, 1) // 9 months
+            PolicyTypeId = 1, Age = 30,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 10, 1)
         });
 
-        result.DurationFactor.Should().Be(1.05m);
+        result.DurationYears.Should().Be(1);
+        result.DurationFactor.Should().Be(0.10m);
     }
 
     [Test]
-    public async Task CalculatePremium_Duration12To24Months_AppliesDurationFactor_1_1()
+    public async Task CalculatePremium_Duration18Months_AppliesDurationFactor_1_10()
     {
+        // 2025-01-01 to 2026-07-01 ≈ 546 days → ceil(1.495) = 2 years → factor = 1.10
         var pt = new PolicyType { Id = 1, BaseAmount = 4000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 30, StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2026, 7, 1) // 18 months
+            PolicyTypeId = 1, Age = 30,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2026, 7, 1)
         });
 
-        result.DurationFactor.Should().Be(1.1m);
+        result.DurationYears.Should().Be(2);
+        result.DurationFactor.Should().Be(1.10m);
     }
 
     [Test]
-    public async Task CalculatePremium_DurationOver24Months_AppliesDurationFactor_1_2()
+    public async Task CalculatePremium_Duration3Years_AppliesDurationFactor_2_10()
     {
+        // 2025-01-01 to 2028-01-01 = 1095 days / 365 = 3.0 → ceil = 3 → factor = 2.10
         var pt = new PolicyType { Id = 1, BaseAmount = 4000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
-            PolicyTypeId = 1, Age = 30, StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2028, 1, 1) // 36 months
+            PolicyTypeId = 1, Age = 30,
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2028, 1, 1)
         });
 
-        result.DurationFactor.Should().Be(1.2m);
+        result.DurationYears.Should().Be(3);
+        result.DurationFactor.Should().Be(2.10m);
     }
 
     [Test]
@@ -395,15 +427,69 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_FinalAmountIsRoundedToTwoDecimals()
     {
+        // Age 30 (0%), 3 months (1 year, 10%), base 3333
+        // final = 3333 + 0 + 333.30 = 3666.30
         var pt = new PolicyType { Id = 1, BaseAmount = 3333 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
         var result = await _sut.CalculatePremiumAsync(new PremiumCalculationDto
         {
             PolicyTypeId = 1, Age = 30,
-            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 4, 1) // 3 months, factors 1.0/1.0
+            StartDate = new DateTime(2025, 1, 1), EndDate = new DateTime(2025, 4, 1)
         });
 
-        result.FinalAmount.Should().Be(3333.00m);
+        result.FinalAmount.Should().Be(3666.30m);
+    }
+
+    // ── RenewPolicy ───────────────────────────────────────────────────────────
+
+    [Test]
+    public async Task RenewPolicy_ExpiredPolicy_RenewsAndReturnsNewDatesAndPremium()
+    {
+        var pt     = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
+        var policy = new Policy
+        {
+            Id = 10, UserId = 5, PolicyTypeId = 1,
+            PolicyNumber = "POL-RENEW", Status = PolicyStatus.Expired,
+            EndDate = DateTime.UtcNow.AddDays(-30), PolicyType = pt
+        };
+        var payment = new Payment { Id = 1 };
+
+        _repoMock.Setup(r => r.GetPolicyByIdAsync(10)).ReturnsAsync(policy);
+        _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
+        _repoMock.Setup(r => r.UpdatePolicyAsync(It.IsAny<Policy>())).ReturnsAsync(policy);
+        _repoMock.Setup(r => r.CreatePaymentAsync(It.IsAny<Payment>())).ReturnsAsync(payment);
+
+        var result = await _sut.RenewPolicyAsync(10, new RenewPolicyDto { Age = 30 }, userId: 5);
+
+        result.PolicyId.Should().Be(10);
+        result.PolicyNumber.Should().Be("POL-RENEW");
+        result.RenewalCount.Should().Be(1);
+        result.NewEndDate.Should().BeAfter(result.NewStartDate);
+        result.TransactionId.Should().StartWith("TXN-RENEW");
+        _repoMock.Verify(r => r.UpdatePolicyAsync(It.Is<Policy>(p => p.IsRenewed && p.Status == PolicyStatus.Active)), Times.Once);
+        _repoMock.Verify(r => r.CreatePaymentAsync(It.IsAny<Payment>()), Times.Once);
+    }
+
+    [Test]
+    public async Task RenewPolicy_NonExistentPolicy_ThrowsKeyNotFoundException()
+    {
+        _repoMock.Setup(r => r.GetPolicyByIdAsync(999)).ReturnsAsync((Policy?)null);
+
+        Func<Task> act = () => _sut.RenewPolicyAsync(999, new RenewPolicyDto { Age = 30 }, userId: 1);
+
+        await act.Should().ThrowAsync<KeyNotFoundException>().WithMessage("*999*");
+    }
+
+    [Test]
+    public async Task RenewPolicy_WrongOwner_ThrowsUnauthorizedException()
+    {
+        var pt     = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
+        var policy = new Policy { Id = 5, UserId = 99, PolicyTypeId = 1, Status = PolicyStatus.Active, PolicyType = pt };
+        _repoMock.Setup(r => r.GetPolicyByIdAsync(5)).ReturnsAsync(policy);
+
+        Func<Task> act = () => _sut.RenewPolicyAsync(5, new RenewPolicyDto { Age = 30 }, userId: 1);
+
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
 }

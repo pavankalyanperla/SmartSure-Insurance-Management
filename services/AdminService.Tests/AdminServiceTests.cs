@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using AdminService.Application.DTOs;
+using AdminService.Application.Interfaces;
 using AdminService.Application.Services;
 using AdminService.Domain.Entities;
 using AdminService.Domain.Interfaces;
@@ -22,6 +23,7 @@ public class AdminServiceTests
     private Mock<ILogger<AdminAppService>> _loggerMock = null!;
     private Mock<IConfiguration> _configMock = null!;
     private Mock<IHttpContextAccessor> _httpContextMock = null!;
+    private Mock<INotificationPublisher> _notificationPublisherMock = null!;
 
     private AdminAppService BuildSut(HttpMessageHandler handler)
     {
@@ -31,16 +33,22 @@ public class AdminServiceTests
             httpClient,
             _configMock.Object,
             _loggerMock.Object,
-            _httpContextMock.Object);
+            _httpContextMock.Object,
+            _notificationPublisherMock.Object);
     }
 
     [SetUp]
     public void SetUp()
     {
-        _repoMock        = new Mock<IAdminRepository>(MockBehavior.Loose);
-        _loggerMock      = new Mock<ILogger<AdminAppService>>();
-        _configMock      = new Mock<IConfiguration>();
-        _httpContextMock = new Mock<IHttpContextAccessor>();
+        _repoMock                    = new Mock<IAdminRepository>(MockBehavior.Loose);
+        _loggerMock                  = new Mock<ILogger<AdminAppService>>();
+        _configMock                  = new Mock<IConfiguration>();
+        _httpContextMock             = new Mock<IHttpContextAccessor>();
+        _notificationPublisherMock   = new Mock<INotificationPublisher>(MockBehavior.Loose);
+
+        _notificationPublisherMock
+            .Setup(p => p.PublishClaimStatusChangedAsync(It.IsAny<ClaimStatusNotificationDto>()))
+            .Returns(Task.CompletedTask);
 
         // Provide service URL config values
         _configMock.Setup(c => c["ServiceUrls:IdentityService"]).Returns("http://identity");
@@ -416,5 +424,98 @@ public class AdminServiceTests
         requestedUrls.Should().Contain(u => u.StartsWith("http://identity"));
         requestedUrls.Should().Contain(u => u.StartsWith("http://policy"));
         requestedUrls.Should().Contain(u => u.StartsWith("http://claims"));
+    }
+
+    // ── Notification Publisher ────────────────────────────────────────────────
+
+    [Test]
+    public async Task UpdateClaimStatus_AfterUpdate_PublishesNotificationWithCorrectStatus()
+    {
+        var claimDetail = JsonSerializer.Serialize(new
+        {
+            id = 5, claimNumber = "CLM-005", customerId = 7, status = "Submitted"
+        });
+        var userDetail = JsonSerializer.Serialize(new
+        {
+            id = 7, fullName = "Jane Doe", email = "jane@x.com",
+            role = "CUSTOMER", isActive = true, createdAt = DateTime.UtcNow
+        });
+
+        var handler = JsonHandler(("/claims/5", claimDetail), ("/users/7", userDetail));
+
+        _repoMock.Setup(r => r.CreateLogAsync(It.IsAny<AdminLog>()))
+                 .ReturnsAsync(new AdminLog { Id = 1 });
+
+        var sut = BuildSut(handler);
+        var result = await sut.UpdateClaimStatusAsync(
+            new UpdateClaimStatusDto { ClaimId = 5, Status = "Approved", AdminNote = "Verified" },
+            adminId: 1);
+
+        result.ClaimId.Should().Be(5);
+
+        // Fire-and-forget: allow background task to complete
+        await Task.Delay(300);
+
+        _notificationPublisherMock.Verify(
+            p => p.PublishClaimStatusChangedAsync(It.Is<ClaimStatusNotificationDto>(n =>
+                n.ClaimId == 5 &&
+                n.NewStatus == "Approved" &&
+                n.ClaimNumber == "CLM-005" &&
+                n.CustomerEmail == "jane@x.com")),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task UpdateClaimStatus_WhenPublisherFails_StatusStillUpdated()
+    {
+        var claimDetail = JsonSerializer.Serialize(new
+        {
+            id = 10, claimNumber = "CLM-010", customerId = 3, status = "Submitted"
+        });
+        var userDetail = JsonSerializer.Serialize(new
+        {
+            id = 3, fullName = "Bob", email = "bob@x.com",
+            role = "CUSTOMER", isActive = true, createdAt = DateTime.UtcNow
+        });
+
+        var handler = JsonHandler(("/claims/10", claimDetail), ("/users/3", userDetail));
+
+        _repoMock.Setup(r => r.CreateLogAsync(It.IsAny<AdminLog>()))
+                 .ReturnsAsync(new AdminLog { Id = 1 });
+
+        // Publisher is set to throw — should not bubble up due to fire-and-forget swallowing exceptions
+        _notificationPublisherMock
+            .Setup(p => p.PublishClaimStatusChangedAsync(It.IsAny<ClaimStatusNotificationDto>()))
+            .ThrowsAsync(new InvalidOperationException("RabbitMQ connection failed"));
+
+        var sut = BuildSut(handler);
+        var result = await sut.UpdateClaimStatusAsync(
+            new UpdateClaimStatusDto { ClaimId = 10, Status = "Rejected", AdminNote = "Denied" },
+            adminId: 2);
+
+        // Main response succeeds even though publisher threw
+        result.ClaimId.Should().Be(10);
+    }
+
+    [Test]
+    public async Task UpdateClaimStatus_WhenClaimDetailsMissing_SkipsNotification()
+    {
+        // Handler returns 404 for claims (so claimNumber is empty → notification skipped)
+        var sut = BuildSut(ErrorHandler());
+
+        _repoMock.Setup(r => r.CreateLogAsync(It.IsAny<AdminLog>()))
+                 .ReturnsAsync(new AdminLog { Id = 1 });
+
+        // PUT also fails → exception expected
+        Func<Task> act = () => sut.UpdateClaimStatusAsync(
+            new UpdateClaimStatusDto { ClaimId = 99, Status = "Approved" },
+            adminId: 1);
+
+        await act.Should().ThrowAsync<Exception>();
+
+        // Publisher was never called because status update itself failed
+        _notificationPublisherMock.Verify(
+            p => p.PublishClaimStatusChangedAsync(It.IsAny<ClaimStatusNotificationDto>()),
+            Times.Never);
     }
 }

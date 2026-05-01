@@ -77,6 +77,19 @@
       "SwaggerKey": "identity"
     },
     {
+      "DownstreamPathTemplate": "/api/policies/{id}/renew",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "policy-service", "Port": 5145 }
+      ],
+      "UpstreamPathTemplate": "/gateway/policies/{id}/renew",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "SwaggerKey": "policy"
+    },
+    {
       "DownstreamPathTemplate": "/api/policies/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [

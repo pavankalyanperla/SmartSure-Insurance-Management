@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, tap } from 'rxjs';
-import { CreatePolicyRequest, Payment, Policy, PolicyType, PremiumCalculation, PremiumResponse } from '../models/policy.models';
+import { CreatePolicyRequest, Payment, Policy, PolicyType, PremiumCalculation, PremiumResponse, RenewalResponse } from '../models/policy.models';
 
 @Injectable({ providedIn: 'root' })
 export class PolicyService {
@@ -71,5 +71,9 @@ export class PolicyService {
 
   getPolicyTypeStats(id: number | string): Observable<unknown> {
     return this.http.get(`${this.baseUrl}/admin/types/${id}/stats`);
+  }
+
+  renewPolicy(policyId: number, age: number): Observable<RenewalResponse> {
+    return this.http.post<RenewalResponse>(`${this.baseUrl}/${policyId}/renew`, { policyId, age });
   }
 }

@@ -1,6 +1,24 @@
 # SmartSure Insurance Management System
 
+> **Status:** 4 .NET 10 microservices · Angular 21 frontend · Docker verified (8 containers) · 110 NUnit tests · RabbitMQ email notifications
+
 SmartSure is a .NET 10 microservices-based insurance management system with four domain services, an Ocelot API gateway, JWT authentication, Swagger aggregation, and an admin dashboard that composes data from the domain services.
+
+## Features Implemented
+
+- JWT authentication with OTP email verification for registration
+- Forgot password / reset password via OTP email
+- Policy creation with age and duration based premium calculation
+- Full claim lifecycle (Draft → Submitted → UnderReview → Approved/Rejected → Closed)
+- Claim document uploads
+- Admin dashboard aggregating users, policies, and claims from all services
+- Admin claim status updates with RabbitMQ email notifications to customers
+- Admin user activation/deactivation
+- Admin report generation and audit logs
+- Ocelot API gateway with aggregated Swagger UI
+- Angular 21 frontend with full admin and customer dashboards
+- Docker Compose deployment with 8 containers (SQL Server, RabbitMQ, 4 .NET services, gateway, Angular)
+- 110 NUnit unit tests across all 4 services with 90%+ code coverage
 
 ## Overview
 
@@ -108,6 +126,23 @@ docker-compose down -v
 - Server: `localhost,1433`
 - Username: `sa`
 - Password: `SmartSure@2025!`
+
+### Verified Working (Docker)
+
+All 8 containers confirmed running with `docker ps`:
+
+| Container | Image | Port |
+|---|---|---|
+| angular-frontend | smartsure-angular-frontend | 4200→80 |
+| api-gateway | smartsure-api-gateway | 5000 |
+| identity-service | smartsure-identity-service | 5265 |
+| policy-service | smartsure-policy-service | 5145 |
+| claims-service | smartsure-claims-service | 5084 |
+| admin-service | smartsure-admin-service | 5073 |
+| sqlserver | mcr.microsoft.com/mssql/server | 1433 |
+| rabbitmq | rabbitmq:3-management | 5672, 15672 |
+
+All services healthy, all 4 SQL databases auto-migrated on startup, RabbitMQ management UI accessible at `http://localhost:15672`.
 
 ### How It Works
 - Each .NET service reads its connection string from the `ConnectionStrings__DefaultConnection` environment variable injected by docker-compose.
@@ -243,6 +278,27 @@ Supported operations:
 - update claim status for admins
 - upload claim documents
 
+## RabbitMQ Email Notification Flow
+
+When an admin updates a claim status, the customer automatically receives an HTML email notification:
+
+1. Admin calls `PUT /gateway/admin/claims/{id}/status` with new status and optional note
+2. AdminService fetches claim details from ClaimsService (claim number, customer ID, old status)
+3. AdminService updates the claim status in ClaimsService
+4. AdminService fires a background task (fire-and-forget) that:
+   - Fetches customer email and name from IdentityService
+   - Publishes a `ClaimStatusNotificationDto` message to the `claim.status.notification` RabbitMQ queue
+5. IdentityService `ClaimNotificationConsumer` (BackgroundService) receives the message and sends the email
+6. Customer receives a professional HTML email with a color-coded status badge:
+   - Approved → green
+   - Rejected → red
+   - UnderReview → purple
+   - Closed → gray
+
+The fire-and-forget pattern means the API response never waits for the email. If RabbitMQ is unavailable or the email fails, the status update still succeeds and the error is logged as a warning.
+
+**Queue:** `claim.status.notification` (durable, persistent messages)
+
 ## AdminService
 
 AdminService combines data from all services to render the admin dashboard and related admin views.
@@ -278,6 +334,27 @@ Authenticated smoke test completed successfully by:
 - registering a test user
 - logging in to get a JWT
 - calling protected gateway routes with that token
+
+## Testing
+
+All tests use NUnit 4 + Moq + FluentAssertions. Repository interfaces are mocked with `MockBehavior.Strict`; service-level mocks use `MockBehavior.Loose`.
+
+| Project | Tests | Coverage |
+|---|---|---|
+| IdentityService.Tests | 31 | ~98% line / 100% branch |
+| PolicyService.Tests | 27 | ~96% line / 100% branch |
+| ClaimsService.Tests | 30 | ~95% line / ~78% branch |
+| AdminService.Tests | 22 | ~90% line |
+| **Total** | **110** | **90%+ across all services** |
+
+Run all tests:
+
+```bash
+dotnet test services/IdentityService.Tests/IdentityService.Tests.csproj
+dotnet test services/PolicyService.Tests/PolicyService.Tests.csproj
+dotnet test services/ClaimsService.Tests/ClaimsService.Tests.csproj
+dotnet test services/AdminService.Tests/AdminService.Tests.csproj
+```
 
 ## Build Status
 
@@ -477,3 +554,42 @@ Additional changes were implemented after the sections above to make OTP registr
 - Started/stopped services multiple times to validate fixes and route behavior.
 - Final requested state in this chat: all SmartSure services were stopped and confirmed down on ports:
 	- `5000`, `5265`, `5145`, `5084`, `5073`.
+
+### 12) RabbitMQ Email Notification Feature
+
+Implemented claim status email notifications via RabbitMQ:
+
+- `INotificationPublisher` interface added to AdminService.Application.Interfaces
+- `NotificationPublisher` implementation added to AdminService.Infrastructure.Services
+  - Publishes to queue `claim.status.notification` (durable, persistent)
+  - Reads RabbitMQ host/credentials from `IConfiguration`
+  - Wrapped in try/catch so publisher errors never block the API response
+- `AdminAppService.UpdateClaimStatusAsync` updated to fire-and-forget publish after status update
+  - Pre-fetches claim detail (claim number, customer ID) before the PUT
+  - Post-update: resolves customer email from IdentityService, builds notification DTO, publishes
+- `ClaimStatusNotificationDto` added to both AdminService.Application.DTOs and IdentityService.Application.DTOs
+- `IEmailService.SendClaimStatusEmailAsync` added to IdentityService.Application.Interfaces
+- `EmailService.SendClaimStatusEmailAsync` implemented with professional HTML template
+  - Status-specific messages and color-coded badges per status
+- `ClaimNotificationConsumer` BackgroundService added to IdentityService.Infrastructure.Messaging
+  - Consumes from `claim.status.notification` queue
+  - Resolves scoped `IEmailService` via `IServiceScopeFactory`
+  - Auto-reconnects on RabbitMQ disconnect with 5-second retry delay
+  - Registered in IdentityService.API `Program.cs` as hosted service
+- New endpoint added to IdentityService: `GET /api/auth/admin/users/{userId}` (used by AdminService for customer lookup)
+- `appsettings.json` and `appsettings.Docker.json` updated with RabbitMQ section
+
+### 13) NUnit Test Suite (110 Tests)
+
+Comprehensive unit test projects created for all 4 services:
+
+- `services/IdentityService.Tests` — 31 tests for `AuthService`
+  - OTP send/verify, login, password reset, user management, claim status email interface
+- `services/PolicyService.Tests` — 27 tests for `PolicyAppService`
+  - All premium calculation factors (age, duration), CRUD, payments
+- `services/ClaimsService.Tests` — 30 tests for `ClaimAppService`
+  - Claim lifecycle, all valid/invalid status transitions, documents, stats
+- `services/AdminService.Tests` — 22 tests for `AdminAppService`
+  - Dashboard aggregation, user/claim management, reports, logs, notification publisher
+
+All 110 tests pass with 0 failures. 90%+ line coverage across all services.

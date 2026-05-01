@@ -35,7 +35,17 @@
               <td><span class="badge" [class]="'badge ' + statusClass(policy.status)">{{ policy.status }}</span></td>
               <td>{{ policy.premiumAmount | currency:'INR':'symbol':'1.0-0' }}</td>
               <td>{{ policy.startDate | date:'mediumDate' }} - {{ policy.endDate | date:'mediumDate' }}</td>
-              <td><a class="btn-view-light" [routerLink]="['/customer/policies', policy.id]">View</a></td>
+              <td style="display:flex;gap:6px;align-items:center">
+                <a class="btn-view-light" [routerLink]="['/customer/policies', policy.id]">View</a>
+                @if (policy.status === 'Expired') {
+                  <button
+                    class="btn-success"
+                    (click)="openRenewalModal(policy)"
+                    style="font-size:12px;padding:5px 10px;cursor:pointer">
+                    🔄 Renew
+                  </button>
+                }
+              </td>
             </tr>
           }
         </tbody>
@@ -46,3 +56,59 @@
     }
   }
 </section>
+
+<!-- ── Renewal Modal ──────────────────────────────────────────────────────── -->
+@if (showRenewalModal && selectedPolicyForRenewal) {
+  <div class="review-overlay" (click)="showRenewalModal = false"></div>
+  <div class="review-panel" style="width:420px">
+    <div class="review-panel-header">
+      <div>
+        <h3>Renew Policy</h3>
+        <p>{{ selectedPolicyForRenewal.policyNumber }}</p>
+      </div>
+      <button class="close-btn" (click)="showRenewalModal = false">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+    <div style="padding:1.5rem">
+      <div class="review-info-row">
+        <span class="review-label">Policy Type:</span>
+        <span class="review-value">{{ selectedPolicyForRenewal.policyTypeName }}</span>
+      </div>
+      <div class="review-info-row">
+        <span class="review-label">Current Status:</span>
+        <span [class]="'badge ' + statusClass(selectedPolicyForRenewal.status)">
+          {{ selectedPolicyForRenewal.status }}
+        </span>
+      </div>
+      <div class="review-info-row">
+        <span class="review-label">Renewal Duration:</span>
+        <span class="review-value">1 Year</span>
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="review-label">Your Current Age</label>
+        <input
+          type="number"
+          [(ngModel)]="renewalAge"
+          min="18" max="100"
+          class="form-input"
+          placeholder="Enter your current age"
+        />
+      </div>
+      <div style="background:#eff6ff;border-radius:8px;padding:12px;margin-top:1rem;font-size:13px;color:#1d4ed8">
+        <i class="pi pi-info-circle"></i>
+        Same policy number will be kept. Coverage extends for 1 more year from today.
+      </div>
+    </div>
+    <div class="review-actions">
+      <button class="btn-view-light" (click)="showRenewalModal = false">Cancel</button>
+      <button class="btn-primary" (click)="renewPolicy()" [disabled]="isRenewing">
+        @if (isRenewing) {
+          <i class="pi pi-spin pi-spinner"></i> Renewing...
+        } @else {
+          🔄 Renew Policy
+        }
+      </button>
+    </div>
+  </div>
+}

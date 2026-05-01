@@ -6,6 +6,7 @@
     <div [class]="step === 3 ? 'step-active' : 'step-inactive'">3. Confirm</div>
   </div>
 
+  <!-- ── Step 1: Policy Details ───────────────────────────────────────────── -->
   @if (step === 1) {
     <div class="form-card p-4">
       <div class="form-group">
@@ -32,42 +33,164 @@
         <div class="col-12 md:col-4"><label class="form-label">End Date</label><input class="form-input" type="date" [min]="startDate || minStartDate" [(ngModel)]="endDate"></div>
       </div>
 
-      <button class="btn-primary mt-3" (click)="calculatePremium()" [disabled]="isCalculating">{{ isCalculating ? 'Calculating...' : 'Calculate Premium' }}</button>
+      <button class="btn-primary mt-3" (click)="calculatePremium()" [disabled]="isCalculating">
+        {{ isCalculating ? 'Calculating...' : 'Calculate Premium' }}
+      </button>
     </div>
   }
 
+  <!-- ── Step 2: Premium Breakdown ──────────────────────────────────────── -->
   @if (step === 2) {
     <div class="form-card p-4">
-      <h3>Premium Breakdown</h3>
-      <div class="grid">
-        <div class="col-12 md:col-3"><div class="stat-card blue"><strong>Base Amount</strong><h3>{{ baseAmountFromSelection | currency:'INR':'symbol':'1.0-0' }}</h3></div></div>
-        <div class="col-12 md:col-3"><div class="stat-card green"><strong>Age Factor</strong><h3>{{ ageFactor }}</h3></div></div>
-        <div class="col-12 md:col-3"><div class="stat-card orange"><strong>Duration Factor</strong><h3>{{ durationFactor }}</h3></div></div>
-        <div class="col-12 md:col-3"><div class="stat-card teal"><strong>Final Premium</strong><h3>{{ computedFinalPremium | currency:'INR':'symbol':'1.0-0' }}</h3></div></div>
+      <h3>Step 2: Premium Breakdown</h3>
+
+      <!-- How It's Calculated Info Box -->
+      <div class="calc-info-box">
+        <div class="calc-info-header">
+          <i class="pi pi-calculator"></i>
+          <span>How Your Premium Is Calculated</span>
+        </div>
+        <div class="calc-formula">
+          <div class="calc-row">
+            <span class="calc-label">📋 Base Amount</span>
+            <span class="calc-value">{{ premium?.baseAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+            <span class="calc-desc">Standard premium for {{ selectedPolicyType?.name }}</span>
+          </div>
+          <div class="calc-plus">+</div>
+          <div class="calc-row highlight-blue">
+            <span class="calc-label">👤 Age Factor ({{ premium?.ageGroup }})</span>
+            <span class="calc-value">{{ premium?.ageFactorAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+            <span class="calc-desc">
+              {{ premium?.baseAmount | currency:'INR':'symbol':'1.0-0' }} × {{ ((premium?.ageFactor ?? 0) * 100).toFixed(0) }}%
+            </span>
+          </div>
+          <div class="calc-plus">+</div>
+          <div class="calc-row highlight-green">
+            <span class="calc-label">📅 Duration Factor ({{ premium?.durationYears }} year{{ (premium?.durationYears ?? 1) > 1 ? 's' : '' }})</span>
+            <span class="calc-value">{{ premium?.durationFactorAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+            <span class="calc-desc">
+              {{ premium?.baseAmount | currency:'INR':'symbol':'1.0-0' }} × {{ ((premium?.durationFactor ?? 0) * 100).toFixed(0) }}%
+            </span>
+          </div>
+          <div class="calc-divider"></div>
+          <div class="calc-row total">
+            <span class="calc-label">💰 Total Premium</span>
+            <span class="calc-value total-amount">{{ premium?.finalAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+            <span class="calc-desc">{{ premium?.formulaExplanation }}</span>
+          </div>
+        </div>
       </div>
-      <div class="flex gap-2 mt-3">
-        <button class="btn-view-light" (click)="previousStep()">Back</button>
-        <button class="btn-primary" (click)="continueToConfirm()">Confirm & Buy</button>
+
+      <!-- Age Factor Explanation -->
+      <div class="factor-explanation">
+        <h4><i class="pi pi-info-circle"></i> Age Factor Rules</h4>
+        <div class="factor-grid">
+          <div class="factor-item" [class.active]="(premium?.ageFactor ?? -1) === 0.10">
+            <span>18-25 yrs</span><span>+10%</span>
+          </div>
+          <div class="factor-item" [class.active]="(premium?.ageFactor ?? -1) === 0.00">
+            <span>26-40 yrs</span><span>+0%</span>
+          </div>
+          <div class="factor-item" [class.active]="(premium?.ageFactor ?? -1) === 0.20">
+            <span>41-55 yrs</span><span>+20%</span>
+          </div>
+          <div class="factor-item" [class.active]="(premium?.ageFactor ?? -1) === 0.50">
+            <span>56+ yrs</span><span>+50%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Duration Factor Explanation -->
+      <div class="factor-explanation">
+        <h4><i class="pi pi-calendar"></i> Duration Factor Rules</h4>
+        <div class="factor-grid">
+          <div class="factor-item" [class.active]="(premium?.durationYears ?? 0) === 1">
+            <span>1 Year</span><span>+10%</span>
+          </div>
+          <div class="factor-item" [class.active]="(premium?.durationYears ?? 0) === 2">
+            <span>2 Years</span><span>+110%</span>
+          </div>
+          <div class="factor-item" [class.active]="(premium?.durationYears ?? 0) === 3">
+            <span>3 Years</span><span>+210%</span>
+          </div>
+          <div class="factor-item">
+            <span>N Years</span><span>+(N-0.9)×100%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2" style="margin-top:1.5rem">
+        <button class="btn-view-light" (click)="prevStep()">
+          <i class="pi pi-arrow-left"></i> Back
+        </button>
+        <button class="btn-primary" style="background:#16a34a" (click)="nextStep()">
+          Proceed to Confirm <i class="pi pi-arrow-right"></i>
+        </button>
       </div>
     </div>
   }
 
+  <!-- ── Step 3: Confirm & Pay ─────────────────────────────────────────── -->
   @if (step === 3) {
     <div class="form-card p-4">
-      <h3>Confirm Purchase</h3>
-      <div class="grid">
-        <div class="col-12 md:col-6"><strong>Policy Type</strong><div>{{ selectedPolicyType?.name }}</div></div>
-        <div class="col-12 md:col-6"><strong>Base Amount</strong><div>{{ baseAmountFromSelection | currency:'INR':'symbol':'1.0-0' }}</div></div>
-        <div class="col-12 md:col-6"><strong>Age Factor</strong><div>{{ ageFactor }}</div></div>
-        <div class="col-12 md:col-6"><strong>Duration Factor</strong><div>{{ durationFactor }}</div></div>
-        <div class="col-12 md:col-6"><strong>Start Date</strong><div>{{ startDate | date:'mediumDate' }}</div></div>
-        <div class="col-12 md:col-6"><strong>End Date</strong><div>{{ endDate | date:'mediumDate' }}</div></div>
-        <div class="col-12"><strong>Final Premium</strong><h2 class="text-green-500">{{ computedFinalPremium | currency:'INR':'symbol':'1.0-0' }}</h2></div>
+      <h3>Step 3: Confirm &amp; Pay</h3>
+
+      <div class="confirm-card">
+        <div class="payment-row">
+          <span class="payment-label">Policy Type:</span>
+          <span class="payment-value">{{ selectedPolicyType?.name }}</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Base Amount:</span>
+          <span class="payment-value">{{ premium?.baseAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Age Factor Amount:</span>
+          <span class="payment-value">+ {{ premium?.ageFactorAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Duration Factor Amount:</span>
+          <span class="payment-value">+ {{ premium?.durationFactorAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="payment-row">
+          <span class="payment-label">Coverage Period:</span>
+          <span class="payment-value">{{ startDate | date:'MMM d, yyyy' }} → {{ endDate | date:'MMM d, yyyy' }}</span>
+        </div>
+        <div class="payment-row" style="border-top:2px solid #e5e7eb;margin-top:8px;padding-top:12px">
+          <span style="font-size:16px;font-weight:700">Total Premium:</span>
+          <span style="font-size:22px;font-weight:700;color:#16a34a">
+            {{ premium?.finalAmount | currency:'INR':'symbol':'1.2-2' }}
+          </span>
+        </div>
       </div>
-      <p><strong>Payment:</strong> Online</p>
-      <div class="flex gap-2 mt-3">
-        <button class="btn-view-light" (click)="previousStep()">Back</button>
-        <button class="btn-success" (click)="payAndActivate()" [disabled]="isSubmitting">{{ isSubmitting ? 'Processing...' : 'Pay & Activate Policy' }}</button>
+
+      <!-- Razorpay Payment -->
+      <div style="margin-top:1.5rem">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:1rem;font-size:13px;color:#16a34a">
+          <i class="pi pi-shield"></i>
+          <strong> Secure Payment</strong> powered by Razorpay.
+          Your payment information is encrypted and secure.
+        </div>
+
+        <div class="flex gap-2">
+          <button class="btn-view-light" (click)="prevStep()" [disabled]="isPurchasing">
+            <i class="pi pi-arrow-left"></i> Back
+          </button>
+          <button
+            (click)="initiatePayment()"
+            [disabled]="isPurchasing"
+            style="flex:2;background:#1a56db;color:white;border:none;padding:14px 24px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px">
+            @if (isPurchasing) {
+              <i class="pi pi-spin pi-spinner"></i> Processing...
+            } @else {
+              <i class="pi pi-credit-card"></i> Pay ₹{{ premium?.finalAmount | number:'1.2-2' }} with Razorpay
+            }
+          </button>
+        </div>
+
+        <div style="margin-top:12px;text-align:center;font-size:12px;color:#9ca3af">
+          🧪 Test Mode: Use card 4111 1111 1111 1111, any future expiry, any CVV
+        </div>
       </div>
     </div>
   }

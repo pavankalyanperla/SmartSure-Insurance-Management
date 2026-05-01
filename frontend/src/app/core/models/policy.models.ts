@@ -39,8 +39,24 @@ export interface PremiumCalculation {
 export interface PremiumResponse {
   baseAmount: number;
   ageFactor: number;
+  ageFactorAmount: number;
   durationFactor: number;
+  durationFactorAmount: number;
+  durationYears: number;
   finalAmount: number;
+  ageGroup: string;
+  formulaExplanation: string;
+}
+
+export interface RenewalResponse {
+  policyId: number;
+  policyNumber: string;
+  newStartDate: string;
+  newEndDate: string;
+  newPremiumAmount: number;
+  transactionId: string;
+  renewalCount: number;
+  message: string;
 }
 
 export interface CreatePolicyRequest {

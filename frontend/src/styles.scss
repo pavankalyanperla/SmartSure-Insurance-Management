@@ -648,3 +648,100 @@ textarea {
   .steps-indicator { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: 1fr 1fr; }
 }
+
+// ── Premium Calculation Breakdown ──────────────────────────────────────────
+.calc-info-box {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.calc-info-header {
+  background: #1a56db;
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.calc-formula { padding: 1rem; }
+.calc-row {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  gap: 8px;
+}
+.calc-row.highlight-blue  { background: #eff6ff; }
+.calc-row.highlight-green { background: #f0fdf4; }
+.calc-row.total {
+  background: #1a56db;
+  color: white;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+.calc-label      { font-size: 13px; font-weight: 600; }
+.calc-value      { font-size: 15px; font-weight: 700; text-align: right; }
+.calc-desc       { font-size: 11px; color: #6b7280; }
+.total .calc-desc { color: rgba(255,255,255,0.7); }
+.total-amount    { font-size: 20px; color: #4ade80; }
+.calc-plus       { text-align: center; font-size: 20px; font-weight: 700; color: #1a56db; padding: 4px 0; }
+.calc-divider    { height: 1px; background: #e5e7eb; margin: 8px 0; }
+.factor-explanation {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.factor-explanation h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.factor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.factor-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+}
+.factor-item span                  { display: block; }
+.factor-item span:first-child      { color: #6b7280; margin-bottom: 4px; }
+.factor-item span:last-child       { font-weight: 700; color: #1a56db; }
+.factor-item.active                { border-color: #1a56db; background: #eff6ff; }
+.factor-item.active span:last-child { color: #1a56db; }
+
+// ── Confirm & Pay Card ──────────────────────────────────────────────────────
+.confirm-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+  &:last-child { border-bottom: none; }
+}
+.payment-label { font-size: 13px; color: #6b7280; }
+.payment-value { font-size: 14px; font-weight: 600; }

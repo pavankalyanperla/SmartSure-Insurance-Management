@@ -15,4 +15,5 @@ public interface IPolicyService
     Task<decimal> GetTotalRevenueAsync();
     Task<PaymentResponseDto> GetPaymentByPolicyIdAsync(int policyId);
     Task<List<PaymentResponseDto>> GetMyPaymentsAsync(int userId);
+    Task<RenewalResponseDto> RenewPolicyAsync(int policyId, RenewPolicyDto dto, int userId);
 }

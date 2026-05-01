@@ -1,34 +1,38 @@
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PolicyService } from '../../../core/services/policy.service';
+import { RazorpayService } from '../../../core/services/razorpay.service';
+import { TokenService } from '../../../core/services/token.service';
 import { CreatePolicyRequest, PolicyType, PremiumResponse } from '../../../core/models/policy.models';
 import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-buy-policy',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, DatePipe, CurrencyPipe],
+  imports: [CommonModule, RouterLink, FormsModule, DatePipe, CurrencyPipe, DecimalPipe],
   templateUrl: './buy-policy.component.html'
 })
 export class BuyPolicyComponent implements OnInit {
-  private readonly policyService = inject(PolicyService);
-  private readonly router = inject(Router);
+  private readonly policyService  = inject(PolicyService);
+  private readonly razorpayService = inject(RazorpayService);
+  private readonly tokenService   = inject(TokenService);
+  private readonly router         = inject(Router);
   private readonly messageService = inject(MessageService);
-  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly cdr            = inject(ChangeDetectorRef);
 
   step = 1;
   isCalculating = false;
-  isSubmitting = false;
+  isPurchasing  = false;
   policyTypes: PolicyType[] = [];
   selectedPolicyType: PolicyType | null = null;
-  premiumResponse: PremiumResponse | null = null;
+  premium: PremiumResponse | null = null;
 
   policyTypeId: number | null = null;
-  age = 18;
+  age       = 18;
   startDate = '';
-  endDate = '';
+  endDate   = '';
 
   readonly minStartDate: string = (() => {
     const d = new Date();
@@ -80,8 +84,8 @@ export class BuyPolicyComponent implements OnInit {
       endDate: this.endDate
     }).subscribe({
       next: (result) => {
-        this.premiumResponse = result;
-        this.step = 2;
+        this.premium       = result;
+        this.step          = 2;
         this.isCalculating = false;
         this.cdr.detectChanges();
       },
@@ -93,41 +97,69 @@ export class BuyPolicyComponent implements OnInit {
     });
   }
 
-  continueToConfirm(): void {
-    this.step = 3;
+  nextStep(): void {
+    if (this.step < 3) this.step++;
   }
 
-  payAndActivate(): void {
-    if (!this.policyTypeId || !this.startDate || !this.endDate) return;
+  prevStep(): void {
+    if (this.step > 1) this.step--;
+  }
 
-    const payload: CreatePolicyRequest = {
-      policyTypeId: this.policyTypeId,
-      startDate: this.startDate,
-      endDate: this.endDate,
-      age: this.age
-    };
+  initiatePayment(): void {
+    if (!this.selectedPolicyType || !this.premium) return;
 
-    this.isSubmitting = true;
-    this.policyService.createPolicy(payload).subscribe({
-      next: () => {
-        this.isSubmitting = false;
-        this.messageService.add({ severity: 'success', summary: 'Policy activated', detail: 'Payment successful and policy activated.' });
-        void this.router.navigate(['/customer/policies']);
+    const finalAmount   = this.premium.finalAmount;
+    const customerName  = this.tokenService.getUserName() || 'Customer';
+    const customerEmail = this.tokenService.getEmail()    || '';
+
+    this.isPurchasing = true;
+
+    this.razorpayService.openPaymentModal({
+      amount:        finalAmount,
+      policyName:    this.selectedPolicyType.name,
+      customerName:  customerName,
+      customerEmail: customerEmail,
+      description:   `${this.selectedPolicyType.name} - ${this.premium.durationYears} Year(s)`,
+      onSuccess: (response) => {
+        this.createPolicyAfterPayment(response.razorpay_payment_id);
       },
-      error: (error) => {
-        this.isSubmitting = false;
-        this.messageService.add({ severity: 'error', summary: 'Purchase failed', detail: error?.error?.message || 'Could not create policy.' });
+      onFailure: (error) => {
+        console.error('Payment failed:', error);
+        this.isPurchasing = false;
+        this.messageService.add({ severity: 'error', summary: 'Payment failed', detail: error?.message || 'Payment was cancelled or failed.' });
         this.cdr.detectChanges();
       }
     });
   }
 
-  previousStep(): void {
-    if (this.step > 1) this.step -= 1;
-  }
+  createPolicyAfterPayment(razorpayPaymentId: string): void {
+    const payload: CreatePolicyRequest = {
+      policyTypeId: Number(this.policyTypeId),
+      startDate:    this.startDate,
+      endDate:      this.endDate,
+      age:          this.age
+    };
 
-  get ageFactor(): number { return this.premiumResponse?.ageFactor || 1; }
-  get durationFactor(): number { return this.premiumResponse?.durationFactor || 1; }
-  get baseAmountFromSelection(): number { return this.selectedPolicyType?.baseAmount || 0; }
-  get computedFinalPremium(): number { return this.baseAmountFromSelection * this.ageFactor * this.durationFactor; }
+    this.policyService.createPolicy(payload).subscribe({
+      next: (policy) => {
+        this.isPurchasing = false;
+        this.messageService.add({
+          severity: 'success',
+          summary:  'Policy Activated!',
+          detail:   `Policy ${policy.policyNumber} created. Payment ID: ${razorpayPaymentId}`
+        });
+        void this.router.navigate(['/customer/policies']);
+      },
+      error: (err) => {
+        console.error('Policy creation error:', err);
+        this.isPurchasing = false;
+        this.messageService.add({
+          severity: 'warn',
+          summary:  'Policy creation failed',
+          detail:   `Payment successful (${razorpayPaymentId}) but policy creation failed. Contact support.`
+        });
+        this.cdr.detectChanges();
+      }
+    });
+  }
 }

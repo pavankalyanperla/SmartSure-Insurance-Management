@@ -174,6 +174,14 @@ public class AuthController : ControllerBase
         return Ok(users);
     }
 
+    [HttpGet("admin/users/{userId:int}")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<IActionResult> GetUserById(int userId)
+    {
+        var profile = await _authService.GetProfileAsync(userId);
+        return profile is null ? NotFound() : Ok(profile);
+    }
+
     [HttpGet("admin/users/count")]
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> GetUsersCount()

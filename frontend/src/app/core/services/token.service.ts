@@ -53,6 +53,11 @@ export class TokenService {
     return !!this.getToken() && !this.isTokenExpired();
   }
 
+  getEmail(): string | null {
+    const decoded = this.getDecodedToken();
+    return decoded?.email || null;
+  }
+
   isAdmin(): boolean {
     return this.getUserRole() === 'ADMIN';
   }

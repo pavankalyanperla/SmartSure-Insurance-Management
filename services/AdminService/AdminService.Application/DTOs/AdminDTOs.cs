@@ -67,3 +67,15 @@ public class AdminLogDto
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public class ClaimStatusNotificationDto
+{
+    public int ClaimId { get; set; }
+    public string ClaimNumber { get; set; } = string.Empty;
+    public string CustomerEmail { get; set; } = string.Empty;
+    public string CustomerName { get; set; } = string.Empty;
+    public string OldStatus { get; set; } = string.Empty;
+    public string NewStatus { get; set; } = string.Empty;
+    public string AdminNote { get; set; } = string.Empty;
+    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+}

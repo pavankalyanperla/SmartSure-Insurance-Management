@@ -375,4 +375,98 @@ public class AuthServiceTests
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already registered*");
     }
+
+    // ── Claim Status Email Notifications ─────────────────────────────────────
+
+    [Test]
+    public async Task SendClaimStatusEmail_ApprovedStatus_InvokesEmailServiceWithApprovedNotification()
+    {
+        var notification = new ClaimStatusNotificationDto
+        {
+            ClaimId       = 1,
+            ClaimNumber   = "CLM-001",
+            CustomerEmail = "customer@x.com",
+            CustomerName  = "Alice",
+            OldStatus     = "Submitted",
+            NewStatus     = "Approved",
+            AdminNote     = "All documents verified",
+            ChangedAt     = DateTime.UtcNow
+        };
+
+        await _emailMock.Object.SendClaimStatusEmailAsync(notification);
+
+        _emailMock.Verify(e => e.SendClaimStatusEmailAsync(
+            It.Is<ClaimStatusNotificationDto>(n =>
+                n.NewStatus == "Approved" && n.ClaimId == 1 && n.CustomerEmail == "customer@x.com")),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task SendClaimStatusEmail_RejectedStatus_InvokesEmailServiceWithRejectedNotification()
+    {
+        var notification = new ClaimStatusNotificationDto
+        {
+            ClaimId       = 2,
+            ClaimNumber   = "CLM-002",
+            CustomerEmail = "bob@x.com",
+            CustomerName  = "Bob",
+            OldStatus     = "UnderReview",
+            NewStatus     = "Rejected",
+            AdminNote     = "Insufficient documentation",
+            ChangedAt     = DateTime.UtcNow
+        };
+
+        await _emailMock.Object.SendClaimStatusEmailAsync(notification);
+
+        _emailMock.Verify(e => e.SendClaimStatusEmailAsync(
+            It.Is<ClaimStatusNotificationDto>(n =>
+                n.NewStatus == "Rejected" && n.AdminNote == "Insufficient documentation")),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task SendClaimStatusEmail_UnderReviewStatus_InvokesEmailServiceWithReviewNotification()
+    {
+        var notification = new ClaimStatusNotificationDto
+        {
+            ClaimId       = 3,
+            ClaimNumber   = "CLM-003",
+            CustomerEmail = "carol@x.com",
+            CustomerName  = "Carol",
+            OldStatus     = "Submitted",
+            NewStatus     = "UnderReview",
+            AdminNote     = string.Empty,
+            ChangedAt     = DateTime.UtcNow
+        };
+
+        await _emailMock.Object.SendClaimStatusEmailAsync(notification);
+
+        _emailMock.Verify(e => e.SendClaimStatusEmailAsync(
+            It.Is<ClaimStatusNotificationDto>(n =>
+                n.NewStatus == "UnderReview" && n.ClaimNumber == "CLM-003")),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task SendClaimStatusEmail_ClosedStatus_InvokesEmailServiceWithClosedNotification()
+    {
+        var notification = new ClaimStatusNotificationDto
+        {
+            ClaimId       = 4,
+            ClaimNumber   = "CLM-004",
+            CustomerEmail = "dave@x.com",
+            CustomerName  = "Dave",
+            OldStatus     = "Approved",
+            NewStatus     = "Closed",
+            AdminNote     = "Claim paid out",
+            ChangedAt     = DateTime.UtcNow
+        };
+
+        await _emailMock.Object.SendClaimStatusEmailAsync(notification);
+
+        _emailMock.Verify(e => e.SendClaimStatusEmailAsync(
+            It.Is<ClaimStatusNotificationDto>(n =>
+                n.NewStatus == "Closed" && n.CustomerName == "Dave")),
+            Times.Once);
+    }
 }

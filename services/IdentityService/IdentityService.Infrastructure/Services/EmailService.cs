@@ -1,3 +1,4 @@
+using IdentityService.Application.DTOs;
 using IdentityService.Application.Interfaces;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -173,6 +174,99 @@ public class EmailService : IEmailService
     <div class='footer'>
       <p>Copyright 2026 SmartSure Insurance Management System. All rights reserved.</p>
     </div>
+  </div>
+</body>
+</html>"
+        };
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        using var client = new SmtpClient();
+        client.Timeout = 10000;
+        await client.ConnectAsync(smtpHost, smtpPort, useTls ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
+        if (useAuth) await client.AuthenticateAsync(smtpUser, smtpPassword!);
+        await client.SendAsync(message);
+        await client.DisconnectAsync(true);
+    }
+
+    public async Task SendClaimStatusEmailAsync(ClaimStatusNotificationDto notification)
+    {
+        var emailSettings = _config.GetSection("EmailSettings");
+        var smtpHost     = emailSettings["SmtpHost"]     ?? throw new InvalidOperationException("EmailSettings:SmtpHost is missing.");
+        var smtpPortStr  = emailSettings["SmtpPort"]     ?? throw new InvalidOperationException("EmailSettings:SmtpPort is missing.");
+        var fromEmail    = emailSettings["FromEmail"]    ?? throw new InvalidOperationException("EmailSettings:FromEmail is missing.");
+        var fromName     = emailSettings["FromName"]     ?? "SmartSure Insurance";
+        var smtpUser     = emailSettings["Username"]     ?? fromEmail;
+        var smtpPassword = emailSettings["Password"]     ?? emailSettings["AppPassword"];
+        var useAuth      = bool.TryParse(emailSettings["UseAuthentication"], out var af) ? af : true;
+        var useTls       = bool.TryParse(emailSettings["UseStartTls"],       out var tf) ? tf : true;
+        var smtpPort     = int.Parse(smtpPortStr);
+
+        var statusMessage = notification.NewStatus switch
+        {
+            "UnderReview" => "Our team is currently reviewing your claim documents. We will notify you once a decision is made.",
+            "Approved"    => "Congratulations! Your claim has been approved. Our team will process the payment shortly.",
+            "Rejected"    => "Unfortunately, your claim has been rejected. Please contact support for more information.",
+            "Closed"      => "Your claim has been closed. Thank you for choosing SmartSure.",
+            _             => "Your claim status has been updated. Please log in to view details."
+        };
+
+        var adminNoteSection = string.IsNullOrWhiteSpace(notification.AdminNote)
+            ? string.Empty
+            : $"<div class='info-row'><span>Admin Note:</span><span>{notification.AdminNote}</span></div>";
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, fromEmail));
+        message.To.Add(new MailboxAddress(notification.CustomerName, notification.CustomerEmail));
+        message.Subject = $"SmartSure — Your Claim {notification.ClaimNumber} Status Update";
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <style>
+    body {{ font-family: Arial, sans-serif; background: #f9fafb; margin: 0; padding: 20px; }}
+    .container {{ max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }}
+    .header {{ background: #1a56db; padding: 30px; text-align: center; }}
+    .header h1 {{ color: white; margin: 0; font-size: 24px; }}
+    .body {{ padding: 30px; }}
+    .status-badge {{
+      display: inline-block; padding: 8px 20px; border-radius: 20px;
+      font-weight: 700; font-size: 15px; margin: 4px 0;
+    }}
+    .UnderReview {{ background: #ede9fe; color: #7c3aed; }}
+    .Approved    {{ background: #dcfce7; color: #16a34a; }}
+    .Rejected    {{ background: #fee2e2; color: #dc2626; }}
+    .Closed      {{ background: #f3f4f6; color: #6b7280; }}
+    .Submitted   {{ background: #dbeafe; color: #1d4ed8; }}
+    .info-row {{ display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #374151; }}
+    .info-row span:first-child {{ color: #6b7280; }}
+    .message-box {{ background: #f0f9ff; border-left: 4px solid #1a56db; padding: 14px 16px; margin: 20px 0; border-radius: 0 8px 8px 0; font-size: 14px; color: #1e40af; line-height: 1.6; }}
+    .footer {{ background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; font-size: 12px; color: #9ca3af; }}
+  </style>
+</head>
+<body>
+  <div class='container'>
+    <div class='header'>
+      <h1>SmartSure</h1>
+    </div>
+    <div class='body'>
+      <p style='font-size:16px;color:#111928'>Hello <strong>{notification.CustomerName}</strong>,</p>
+      <p style='font-size:14px;color:#6b7280'>Your insurance claim status has been updated.</p>
+      <div class='info-row'><span>Claim Number:</span><strong>{notification.ClaimNumber}</strong></div>
+      <div class='info-row'><span>Previous Status:</span><span>{notification.OldStatus}</span></div>
+      <div class='info-row'>
+        <span>New Status:</span>
+        <span class='status-badge {notification.NewStatus}'>{notification.NewStatus}</span>
+      </div>
+      {adminNoteSection}
+      <div class='message-box'>{statusMessage}</div>
+      <p style='font-size:13px;color:#6b7280'>You can track your claim status by logging into your SmartSure account.</p>
+    </div>
+    <div class='footer'>© 2026 SmartSure Insurance Management System. All rights reserved.</div>
   </div>
 </body>
 </html>"

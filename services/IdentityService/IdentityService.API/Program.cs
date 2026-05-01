@@ -3,6 +3,7 @@ using IdentityService.Application.Interfaces;
 using IdentityService.Application.Services;
 using IdentityService.Domain.Interfaces;
 using IdentityService.Infrastructure.Data;
+using IdentityService.Infrastructure.Messaging;
 using IdentityService.Infrastructure.Repositories;
 using IdentityService.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,6 +32,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddScoped<AdoUserRepository>();
+
+// RabbitMQ consumer for claim status email notifications
+builder.Services.AddHostedService<ClaimNotificationConsumer>();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

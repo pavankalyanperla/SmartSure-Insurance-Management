@@ -78,6 +78,9 @@ namespace PolicyService.Infrastructure.Data.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsRenewed")
+                        .HasColumnType("bit");
+
                     b.Property<string>("PolicyNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -87,6 +90,12 @@ namespace PolicyService.Infrastructure.Data.Migrations
 
                     b.Property<decimal>("PremiumAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("RenewalCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RenewedFromPolicyId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
@@ -112,8 +121,18 @@ namespace PolicyService.Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("AutoRenewal")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("BaseAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ClaimLimit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CoverageDetails")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -122,10 +141,30 @@ namespace PolicyService.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("DurationMonths")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Exclusions")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("GracePeriodDays")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<int>("MaxAge")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinAge")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RiskCategory")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -137,47 +176,92 @@ namespace PolicyService.Infrastructure.Data.Migrations
                         new
                         {
                             Id = 1,
+                            AutoRenewal = false,
                             BaseAmount = 5000m,
+                            ClaimLimit = 0m,
+                            CoverageDetails = "",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Covers medical expenses",
+                            DurationMonths = 0,
+                            Exclusions = "",
+                            GracePeriodDays = 0,
                             IsActive = true,
-                            Name = "Health Insurance"
+                            MaxAge = 0,
+                            MinAge = 0,
+                            Name = "Health Insurance",
+                            RiskCategory = ""
                         },
                         new
                         {
                             Id = 2,
+                            AutoRenewal = false,
                             BaseAmount = 8000m,
+                            ClaimLimit = 0m,
+                            CoverageDetails = "",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Covers life risks",
+                            DurationMonths = 0,
+                            Exclusions = "",
+                            GracePeriodDays = 0,
                             IsActive = true,
-                            Name = "Life Insurance"
+                            MaxAge = 0,
+                            MinAge = 0,
+                            Name = "Life Insurance",
+                            RiskCategory = ""
                         },
                         new
                         {
                             Id = 3,
+                            AutoRenewal = false,
                             BaseAmount = 3000m,
+                            ClaimLimit = 0m,
+                            CoverageDetails = "",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Covers vehicle damage",
+                            DurationMonths = 0,
+                            Exclusions = "",
+                            GracePeriodDays = 0,
                             IsActive = true,
-                            Name = "Auto Insurance"
+                            MaxAge = 0,
+                            MinAge = 0,
+                            Name = "Auto Insurance",
+                            RiskCategory = ""
                         },
                         new
                         {
                             Id = 4,
+                            AutoRenewal = false,
                             BaseAmount = 4000m,
+                            ClaimLimit = 0m,
+                            CoverageDetails = "",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Covers property damage",
+                            DurationMonths = 0,
+                            Exclusions = "",
+                            GracePeriodDays = 0,
                             IsActive = true,
-                            Name = "Home Insurance"
+                            MaxAge = 0,
+                            MinAge = 0,
+                            Name = "Home Insurance",
+                            RiskCategory = ""
                         },
                         new
                         {
                             Id = 5,
+                            AutoRenewal = false,
                             BaseAmount = 2000m,
+                            ClaimLimit = 0m,
+                            CoverageDetails = "",
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Covers travel risks",
+                            DurationMonths = 0,
+                            Exclusions = "",
+                            GracePeriodDays = 0,
                             IsActive = true,
-                            Name = "Travel Insurance"
+                            MaxAge = 0,
+                            MinAge = 0,
+                            Name = "Travel Insurance",
+                            RiskCategory = ""
                         });
                 });
 

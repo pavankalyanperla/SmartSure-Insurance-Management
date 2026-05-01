@@ -43,8 +43,31 @@ public class PremiumResponseDto
 {
     public decimal BaseAmount { get; set; }
     public decimal AgeFactor { get; set; }
+    public decimal AgeFactorAmount { get; set; }
     public decimal DurationFactor { get; set; }
+    public decimal DurationFactorAmount { get; set; }
+    public int DurationYears { get; set; }
     public decimal FinalAmount { get; set; }
+    public string AgeGroup { get; set; } = string.Empty;
+    public string FormulaExplanation { get; set; } = string.Empty;
+}
+
+public class RenewPolicyDto
+{
+    public int PolicyId { get; set; }
+    public int Age { get; set; }
+}
+
+public class RenewalResponseDto
+{
+    public int PolicyId { get; set; }
+    public string PolicyNumber { get; set; } = string.Empty;
+    public DateTime NewStartDate { get; set; }
+    public DateTime NewEndDate { get; set; }
+    public decimal NewPremiumAmount { get; set; }
+    public string TransactionId { get; set; } = string.Empty;
+    public int RenewalCount { get; set; }
+    public string Message { get; set; } = string.Empty;
 }
 
 public class PaymentResponseDto

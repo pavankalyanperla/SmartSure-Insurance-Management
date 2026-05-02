@@ -28,9 +28,18 @@ public class AdminServiceTests
     private AdminAppService BuildSut(HttpMessageHandler handler)
     {
         var httpClient = new HttpClient(handler);
+
+        // The notification path uses _httpClientFactory.CreateClient() to get a scope-independent
+        // HttpClient. Wire it to the same handler so notification tests still intercept correctly.
+        var factoryMock = new Mock<IHttpClientFactory>();
+        factoryMock
+            .Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(() => new HttpClient(handler));
+
         return new AdminAppService(
             _repoMock.Object,
             httpClient,
+            factoryMock.Object,
             _configMock.Object,
             _loggerMock.Object,
             _httpContextMock.Object,

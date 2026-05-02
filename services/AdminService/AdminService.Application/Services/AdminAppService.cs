@@ -15,6 +15,7 @@ public class AdminAppService : IAdminService
 {
     private readonly IAdminRepository _repository;
     private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _config;
     private readonly ILogger<AdminAppService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -33,6 +34,7 @@ public class AdminAppService : IAdminService
     public AdminAppService(
         IAdminRepository repository,
         HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         IConfiguration config,
         ILogger<AdminAppService> logger,
         IHttpContextAccessor httpContextAccessor,
@@ -40,6 +42,7 @@ public class AdminAppService : IAdminService
     {
         _repository = repository;
         _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _config = config;
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
@@ -191,10 +194,15 @@ public class AdminAppService : IAdminService
                 CreatedAt  = DateTime.UtcNow
             });
 
-            // 3. Publish email notification (fire-and-forget style, never blocks the response)
+            // 3. Publish email notification (fire-and-forget — never blocks the API response)
+            // Capture token NOW while HttpContext is still alive; the background task runs
+            // after the scope is disposed so it must use _httpClientFactory, not _httpClient.
             if (!string.IsNullOrEmpty(claimNumber) && customerId > 0)
             {
-                _ = PublishClaimNotificationAsync(token, dto, claimNumber, customerId, oldStatus);
+                var capturedToken = token;
+                _ = PublishClaimNotificationAsync(
+                    dto.ClaimId, claimNumber, customerId,
+                    oldStatus, dto.Status, dto.AdminNote ?? string.Empty, capturedToken);
             }
 
             return new ClaimReviewDto { ClaimId = dto.ClaimId };
@@ -207,55 +215,82 @@ public class AdminAppService : IAdminService
     }
 
     private async Task PublishClaimNotificationAsync(
-        string? token, UpdateClaimStatusDto dto,
-        string claimNumber, int customerId, string oldStatus)
+        int claimId, string claimNumber, int customerId,
+        string oldStatus, string newStatus, string adminNote,
+        string? capturedToken)
     {
         try
         {
-            // Get customer email + name from IdentityService
-            string customerEmail = string.Empty;
-            string customerName  = string.Empty;
-            try
+            _logger.LogInformation(
+                "Publishing notification for claim {ClaimId} (#{ClaimNumber}), fetching customer {CustomerId}",
+                claimId, claimNumber, customerId);
+
+            // Create an independent HttpClient — NOT _httpClient which is owned by the
+            // request-scoped DI container and may already be disposed by this point.
+            using var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(25);
+
+            if (!string.IsNullOrWhiteSpace(capturedToken))
             {
-                var userBody = await GetWithAuthAsync($"{IdentityBase}/api/auth/admin/users/{customerId}", token);
-                if (!string.IsNullOrEmpty(userBody))
-                {
-                    var user = JsonSerializer.Deserialize<IdentityUserItem>(userBody, CaseInsensitiveOptions);
-                    if (user != null)
-                    {
-                        customerEmail = user.Email;
-                        customerName  = user.FullName;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Could not fetch user info for notification: {Message}", ex.Message);
+                var bearer = capturedToken.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                    ? capturedToken["Bearer ".Length..]
+                    : capturedToken;
+                httpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", bearer);
             }
 
-            if (string.IsNullOrEmpty(customerEmail))
+            // Independent timeout — NOT linked to the original HTTP request's lifecycle
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+            var identityUrl = $"{IdentityBase}/api/auth/admin/users/{customerId}";
+            _logger.LogInformation("Calling identity service: {Url}", identityUrl);
+
+            var response = await httpClient.GetAsync(identityUrl, cts.Token);
+
+            if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Skipping notification for claim {ClaimId} — customer email not found", dto.ClaimId);
+                _logger.LogWarning(
+                    "Identity service returned {Status} for userId {UserId} — skipping notification",
+                    response.StatusCode, customerId);
                 return;
             }
 
+            var json = await response.Content.ReadAsStringAsync(cts.Token);
+            var user = JsonSerializer.Deserialize<IdentityUserItem>(json, CaseInsensitiveOptions);
+
+            if (user == null || string.IsNullOrEmpty(user.Email))
+            {
+                _logger.LogWarning(
+                    "Skipping notification for claim {ClaimId} — customer email not found for userId {UserId}",
+                    claimId, customerId);
+                return;
+            }
+
+            _logger.LogInformation(
+                "Got customer email {Email}, publishing to RabbitMQ", user.Email);
+
             var notification = new ClaimStatusNotificationDto
             {
-                ClaimId       = dto.ClaimId,
+                ClaimId       = claimId,
                 ClaimNumber   = claimNumber,
-                CustomerEmail = customerEmail,
-                CustomerName  = customerName,
+                CustomerEmail = user.Email,
+                CustomerName  = string.IsNullOrEmpty(user.FullName) ? "Customer" : user.FullName,
                 OldStatus     = oldStatus,
-                NewStatus     = dto.Status,
-                AdminNote     = dto.AdminNote ?? string.Empty,
+                NewStatus     = newStatus,
+                AdminNote     = adminNote,
                 ChangedAt     = DateTime.UtcNow
             };
 
             await _notificationPublisher.PublishClaimStatusChangedAsync(notification);
+
+            _logger.LogInformation(
+                "Notification published successfully for claim {ClaimNumber} to {Email}",
+                claimNumber, user.Email);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Failed to publish claim status notification: {Message}", ex.Message);
+            _logger.LogError(ex,
+                "Failed to publish notification for claim {ClaimId}", claimId);
         }
     }
 

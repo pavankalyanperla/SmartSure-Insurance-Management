@@ -1,5 +1,6 @@
 using ClaimsService.Application.Interfaces;
 using ClaimsService.Application.Services;
+using ClaimsService.API.Middlewares;
 using ClaimsService.Domain.Interfaces;
 using ClaimsService.Infrastructure.Data;
 using ClaimsService.Infrastructure.Messaging;
@@ -103,6 +104,7 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseStaticFiles();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseCors("AllowAngular");
 app.UseAuthentication();
 app.UseAuthorization();

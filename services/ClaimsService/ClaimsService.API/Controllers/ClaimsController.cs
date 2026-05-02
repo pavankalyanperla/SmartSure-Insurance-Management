@@ -36,15 +36,9 @@ public class ClaimsController : ControllerBase
         if (customerId is null)
             return Unauthorized();
 
-        try
-        {
-            var result = await _claimService.CreateClaimAsync(customerId.Value, dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        // Domain exceptions (ClaimNotFoundException, etc.) bubble to GlobalExceptionMiddleware
+        var result = await _claimService.CreateClaimAsync(customerId.Value, dto);
+        return Ok(result);
     }
 
     [HttpPost("{id:int}/submit")]
@@ -55,20 +49,9 @@ public class ClaimsController : ControllerBase
         if (customerId is null)
             return Unauthorized();
 
-        try
-        {
-            var result = await _claimService.SubmitClaimAsync(id, customerId.Value);
-            _publisher.PublishClaimSubmitted(result.Id, result.CustomerId, result.ClaimNumber);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _claimService.SubmitClaimAsync(id, customerId.Value);
+        _publisher.PublishClaimSubmitted(result.Id, result.CustomerId, result.ClaimNumber);
+        return Ok(result);
     }
 
     [HttpPost("{id:int}/documents")]
@@ -87,22 +70,15 @@ public class ClaimsController : ControllerBase
         if (claim.CustomerId != customerId.Value)
             return Forbid();
 
-        try
-        {
-            var savedPath = await _fileStorageService.SaveFileAsync(request.File, id);
-            var document = await _claimService.AddDocumentAsync(
-                id,
-                request.File.FileName,
-                savedPath,
-                request.File.ContentType,
-                request.File.Length);
+        var savedPath = await _fileStorageService.SaveFileAsync(request.File, id);
+        var document = await _claimService.AddDocumentAsync(
+            id,
+            request.File.FileName,
+            savedPath,
+            request.File.ContentType,
+            request.File.Length);
 
-            return Ok(document);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return Ok(document);
     }
 
     [HttpGet("my")]
@@ -136,15 +112,8 @@ public class ClaimsController : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<IActionResult> UpdateClaimStatus(int id, [FromBody] UpdateClaimStatusDto dto)
     {
-        try
-        {
-            var result = await _claimService.UpdateClaimStatusAsync(id, dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _claimService.UpdateClaimStatusAsync(id, dto);
+        return Ok(result);
     }
 
     [HttpDelete("{claimId:int}/documents/{documentId:int}")]
@@ -155,19 +124,8 @@ public class ClaimsController : ControllerBase
         if (customerId is null)
             return Unauthorized();
 
-        try
-        {
-            await _claimService.DeleteDocumentAsync(claimId, documentId, customerId.Value);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Forbid(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        await _claimService.DeleteDocumentAsync(claimId, documentId, customerId.Value);
+        return NoContent();
     }
 
     [HttpGet("admin/stats")]

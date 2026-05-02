@@ -1,5 +1,6 @@
 using FluentAssertions;
 using IdentityService.Application.DTOs;
+using IdentityService.Application.Exceptions;
 using IdentityService.Application.Interfaces;
 using IdentityService.Application.Services;
 using IdentityService.Domain.Entities;
@@ -40,13 +41,13 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SendRegistrationOtp_WithExistingEmail_ThrowsInvalidOperation()
+    public async Task SendRegistrationOtp_WithExistingEmail_ThrowsEmailAlreadyRegisteredException()
     {
         _repoMock.Setup(r => r.EmailExistsAsync("existing@example.com")).ReturnsAsync(true);
 
         Func<Task> act = () => _sut.SendRegistrationOtpAsync(new SendOtpRequestDto { Email = "existing@example.com", FullName = "X" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
+        await act.Should().ThrowAsync<EmailAlreadyRegisteredException>()
                  .WithMessage("*already registered*");
     }
 
@@ -74,7 +75,7 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task VerifyRegistrationOtp_WithExpiredOtp_ThrowsUnauthorized()
+    public async Task VerifyRegistrationOtp_WithExpiredOtp_ThrowsOtpExpiredException()
     {
         var expiredOtp = new OtpVerification { Id = 1, Email = "test@x.com", OtpCode = "999999", ExpiresAt = DateTime.UtcNow.AddMinutes(-1), IsUsed = false };
 
@@ -86,11 +87,12 @@ public class AuthServiceTests
             Email = "test@x.com", FullName = "X", Password = "P", OtpCode = "999999"
         });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*expired*");
+        await act.Should().ThrowAsync<OtpExpiredException>()
+                 .WithMessage("*expired*");
     }
 
     [Test]
-    public async Task VerifyRegistrationOtp_WithWrongCode_ThrowsUnauthorized()
+    public async Task VerifyRegistrationOtp_WithWrongCode_ThrowsInvalidOtpException()
     {
         var otp = new OtpVerification { Id = 2, Email = "u@x.com", OtpCode = "123456", ExpiresAt = DateTime.UtcNow.AddMinutes(10), IsUsed = false };
 
@@ -102,11 +104,12 @@ public class AuthServiceTests
             Email = "u@x.com", FullName = "X", Password = "P", OtpCode = "999999"
         });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*Invalid OTP*");
+        await act.Should().ThrowAsync<InvalidOtpException>()
+                 .WithMessage("*Invalid OTP*");
     }
 
     [Test]
-    public async Task VerifyRegistrationOtp_WithUsedOtp_ThrowsUnauthorized()
+    public async Task VerifyRegistrationOtp_WithUsedOtp_ThrowsOtpNotFoundException()
     {
         var usedOtp = new OtpVerification { Id = 3, Email = "u@x.com", OtpCode = "111111", ExpiresAt = DateTime.UtcNow.AddMinutes(10), IsUsed = true };
 
@@ -118,11 +121,12 @@ public class AuthServiceTests
             Email = "u@x.com", FullName = "X", Password = "P", OtpCode = "111111"
         });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*No active OTP*");
+        await act.Should().ThrowAsync<OtpNotFoundException>()
+                 .WithMessage("*No active OTP*");
     }
 
     [Test]
-    public async Task VerifyRegistrationOtp_WhenEmailAlreadyRegistered_ThrowsInvalidOperation()
+    public async Task VerifyRegistrationOtp_WhenEmailAlreadyRegistered_ThrowsEmailAlreadyRegisteredException()
     {
         _repoMock.Setup(r => r.EmailExistsAsync("existing@x.com")).ReturnsAsync(true);
 
@@ -131,11 +135,12 @@ public class AuthServiceTests
             Email = "existing@x.com", FullName = "X", Password = "P", OtpCode = "123456"
         });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already registered*");
+        await act.Should().ThrowAsync<EmailAlreadyRegisteredException>()
+                 .WithMessage("*already registered*");
     }
 
     [Test]
-    public async Task VerifyRegistrationOtp_WhenNoOtpExists_ThrowsUnauthorized()
+    public async Task VerifyRegistrationOtp_WhenNoOtpExists_ThrowsOtpNotFoundException()
     {
         _repoMock.Setup(r => r.EmailExistsAsync("new@x.com")).ReturnsAsync(false);
         _repoMock.Setup(r => r.GetLatestOtpAsync("new@x.com")).ReturnsAsync((OtpVerification?)null);
@@ -145,7 +150,8 @@ public class AuthServiceTests
             Email = "new@x.com", FullName = "X", Password = "P", OtpCode = "000000"
         });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*No active OTP*");
+        await act.Should().ThrowAsync<OtpNotFoundException>()
+                 .WithMessage("*No active OTP*");
     }
 
     // ── Login ─────────────────────────────────────────────────────────────────
@@ -165,7 +171,7 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task Login_WithWrongPassword_ThrowsUnauthorized()
+    public async Task Login_WithWrongPassword_ThrowsInvalidCredentialsException()
     {
         var hash = BCrypt.Net.BCrypt.HashPassword("CorrectPass1!");
         var user = new User { Id = 2, Email = "u@x.com", PasswordHash = hash, IsActive = true };
@@ -174,21 +180,22 @@ public class AuthServiceTests
 
         Func<Task> act = () => _sut.LoginAsync(new LoginDto { Email = "u@x.com", Password = "WrongPass!" });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*Invalid email or password*");
+        await act.Should().ThrowAsync<InvalidCredentialsException>()
+                 .WithMessage("*Invalid email or password*");
     }
 
     [Test]
-    public async Task Login_WithNonExistentEmail_ThrowsUnauthorized()
+    public async Task Login_WithNonExistentEmail_ThrowsInvalidCredentialsException()
     {
         _repoMock.Setup(r => r.GetByEmailAsync("nobody@x.com")).ReturnsAsync((User?)null);
 
         Func<Task> act = () => _sut.LoginAsync(new LoginDto { Email = "nobody@x.com", Password = "Pass!" });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        await act.Should().ThrowAsync<InvalidCredentialsException>();
     }
 
     [Test]
-    public async Task Login_WithDeactivatedUser_ThrowsUnauthorized()
+    public async Task Login_WithDeactivatedUser_ThrowsAccountDeactivatedException()
     {
         var hash = BCrypt.Net.BCrypt.HashPassword("Pass1!");
         var user = new User { Id = 3, Email = "inactive@x.com", PasswordHash = hash, IsActive = false };
@@ -197,7 +204,8 @@ public class AuthServiceTests
 
         Func<Task> act = () => _sut.LoginAsync(new LoginDto { Email = "inactive@x.com", Password = "Pass1!" });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*deactivated*");
+        await act.Should().ThrowAsync<AccountDeactivatedException>()
+                 .WithMessage("*deactivated*");
     }
 
     // ── GetProfile ────────────────────────────────────────────────────────────
@@ -292,13 +300,14 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task SendPasswordResetOtp_WithNonExistentEmail_ThrowsInvalidOperation()
+    public async Task SendPasswordResetOtp_WithNonExistentEmail_ThrowsUserNotFoundException()
     {
         _repoMock.Setup(r => r.GetByEmailAsync("ghost@x.com")).ReturnsAsync((User?)null);
 
         Func<Task> act = () => _sut.SendPasswordResetOtpAsync(new ForgotPasswordSendOtpDto { Email = "ghost@x.com" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*No account found*");
+        await act.Should().ThrowAsync<UserNotFoundException>()
+                 .WithMessage("*No account found*");
     }
 
     // ── ResetPassword ─────────────────────────────────────────────────────────
@@ -319,35 +328,38 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task ResetPassword_WithExpiredOtp_ThrowsUnauthorized()
+    public async Task ResetPassword_WithExpiredOtp_ThrowsOtpExpiredException()
     {
         var otp = new OtpVerification { Id = 9, Email = "u@x.com", OtpCode = "123456", ExpiresAt = DateTime.UtcNow.AddMinutes(-5), IsUsed = false };
         _repoMock.Setup(r => r.GetLatestOtpAsync("u@x.com")).ReturnsAsync(otp);
 
         Func<Task> act = () => _sut.ResetPasswordAsync(new ResetPasswordDto { Email = "u@x.com", OtpCode = "123456", NewPassword = "X" });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*expired*");
+        await act.Should().ThrowAsync<OtpExpiredException>()
+                 .WithMessage("*expired*");
     }
 
     [Test]
-    public async Task ResetPassword_WithWrongOtp_ThrowsUnauthorized()
+    public async Task ResetPassword_WithWrongOtp_ThrowsInvalidOtpException()
     {
         var otp = new OtpVerification { Id = 10, Email = "u@x.com", OtpCode = "111111", ExpiresAt = DateTime.UtcNow.AddMinutes(10), IsUsed = false };
         _repoMock.Setup(r => r.GetLatestOtpAsync("u@x.com")).ReturnsAsync(otp);
 
         Func<Task> act = () => _sut.ResetPasswordAsync(new ResetPasswordDto { Email = "u@x.com", OtpCode = "999999", NewPassword = "X" });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*Invalid OTP*");
+        await act.Should().ThrowAsync<InvalidOtpException>()
+                 .WithMessage("*Invalid OTP*");
     }
 
     [Test]
-    public async Task ResetPassword_WithNullOtp_ThrowsUnauthorized()
+    public async Task ResetPassword_WithNullOtp_ThrowsOtpNotFoundException()
     {
         _repoMock.Setup(r => r.GetLatestOtpAsync("u@x.com")).ReturnsAsync((OtpVerification?)null);
 
         Func<Task> act = () => _sut.ResetPasswordAsync(new ResetPasswordDto { Email = "u@x.com", OtpCode = "111111", NewPassword = "X" });
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("*No active OTP*");
+        await act.Should().ThrowAsync<OtpNotFoundException>()
+                 .WithMessage("*No active OTP*");
     }
 
     // ── Register (legacy direct-registration method) ──────────────────────────
@@ -367,13 +379,14 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task Register_WithExistingEmail_ThrowsInvalidOperation()
+    public async Task Register_WithExistingEmail_ThrowsEmailAlreadyRegisteredException()
     {
         _repoMock.Setup(r => r.EmailExistsAsync("dup@x.com")).ReturnsAsync(true);
 
         Func<Task> act = () => _sut.RegisterAsync(new RegisterDto { FullName = "X", Email = "dup@x.com", Password = "P" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already registered*");
+        await act.Should().ThrowAsync<EmailAlreadyRegisteredException>()
+                 .WithMessage("*already registered*");
     }
 
     // ── Claim Status Email Notifications ─────────────────────────────────────

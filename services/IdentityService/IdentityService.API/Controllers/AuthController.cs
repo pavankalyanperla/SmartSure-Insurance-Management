@@ -18,7 +18,11 @@ public class AuthController : ControllerBase
     private readonly JwtHelper _jwtHelper;
     private readonly AdoUserRepository _adoRepository;
 
-    public AuthController(IAuthService authService, IAuthRepository repository, JwtHelper jwtHelper, AdoUserRepository adoRepository)
+    public AuthController(
+        IAuthService authService,
+        IAuthRepository repository,
+        JwtHelper jwtHelper,
+        AdoUserRepository adoRepository)
     {
         _authService = authService;
         _repository = repository;
@@ -29,122 +33,71 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        try
+        // Exceptions (EmailAlreadyRegisteredException, etc.) bubble up to GlobalExceptionMiddleware
+        var sendOtpResult = await _authService.SendRegistrationOtpAsync(new SendOtpRequestDto
         {
-            var sendOtpResult = await _authService.SendRegistrationOtpAsync(new SendOtpRequestDto
-            {
-                FullName = dto.FullName,
-                Email = dto.Email
-            });
+            FullName = dto.FullName,
+            Email = dto.Email
+        });
 
-            return Accepted(new
-            {
-                message = sendOtpResult.Message,
-                requiresOtpVerification = true,
-                devOtpCode = sendOtpResult.DevOtpCode
-            });
-        }
-        catch (InvalidOperationException ex)
+        return Accepted(new
         {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Failed to send OTP email.", detail = ex.Message });
-        }
+            message = sendOtpResult.Message,
+            requiresOtpVerification = true,
+            devOtpCode = sendOtpResult.DevOtpCode
+        });
     }
 
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpRequestDto dto)
     {
-        try
-        {
-            var result = await _authService.SendRegistrationOtpAsync(dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Failed to send OTP email.", detail = ex.Message });
-        }
+        var result = await _authService.SendRegistrationOtpAsync(dto);
+        return Ok(result);
     }
 
     [HttpPost("resend-otp")]
     public async Task<IActionResult> ResendOtp([FromBody] string email)
     {
-        try
+        var dto = new SendOtpRequestDto
         {
-            var dto = new SendOtpRequestDto
-            {
-                Email = email,
-                FullName = "SmartSure User"
-            };
+            Email = email,
+            FullName = "SmartSure User"
+        };
 
-            var result = await _authService.SendRegistrationOtpAsync(dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Failed to resend OTP email.", detail = ex.Message });
-        }
+        var result = await _authService.SendRegistrationOtpAsync(dto);
+        return Ok(result);
     }
 
     [HttpPost("verify-register")]
     public async Task<IActionResult> VerifyRegister([FromBody] VerifyRegistrationRequestDto dto)
     {
-        try
-        {
-            var result = await _authService.VerifyRegistrationOtpAsync(dto);
+        var result = await _authService.VerifyRegistrationOtpAsync(dto);
 
-            var user = await _repository.GetByEmailAsync(dto.Email.ToLower());
-            if (user is not null)
-            {
-                var (token, expiresAt) = _jwtHelper.GenerateToken(user);
-                result.Token = token;
-                result.ExpiresAt = expiresAt;
-            }
+        var user = await _repository.GetByEmailAsync(dto.Email.ToLower());
+        if (user is not null)
+        {
+            var (token, expiresAt) = _jwtHelper.GenerateToken(user);
+            result.Token = token;
+            result.ExpiresAt = expiresAt;
+        }
 
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+        return Ok(result);
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        try
+        var result = await _authService.LoginAsync(dto);
+
+        var user = await _repository.GetByEmailAsync(dto.Email.ToLower());
+        if (user is not null)
         {
-            var result = await _authService.LoginAsync(dto);
-            
-            // Get the user and generate token
-            var user = await _repository.GetByEmailAsync(dto.Email.ToLower());
-            if (user is not null)
-            {
-                var (token, expiresAt) = _jwtHelper.GenerateToken(user);
-                result.Token = token;
-                result.ExpiresAt = expiresAt;
-            }
-            
-            return Ok(result);
+            var (token, expiresAt) = _jwtHelper.GenerateToken(user);
+            result.Token = token;
+            result.ExpiresAt = expiresAt;
         }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
+
+        return Ok(result);
     }
 
     [HttpGet("profile")]
@@ -207,50 +160,26 @@ public class AuthController : ControllerBase
         var count = await _adoRepository.GetTotalUserCountAsync();
         var allUsers = await _adoRepository.GetAllUsersAsDataTableAsync();
 
-        var result = new
+        return Ok(new
         {
             message = "Data fetched using ADO.NET (raw SQL - no EF Core)",
             totalUsersViaAdo = count,
             adminUserViaAdo = users,
             allUsersCount = allUsers.Rows.Count
-        };
-
-        return Ok(result);
+        });
     }
 
     [HttpPost("forgot-password/send-otp")]
     public async Task<IActionResult> ForgotPasswordSendOtp([FromBody] ForgotPasswordSendOtpDto dto)
     {
-        try
-        {
-            var result = await _authService.SendPasswordResetOtpAsync(dto);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Failed to send reset OTP.", detail = ex.Message });
-        }
+        var result = await _authService.SendPasswordResetOtpAsync(dto);
+        return Ok(result);
     }
 
     [HttpPost("forgot-password/reset")]
     public async Task<IActionResult> ForgotPasswordReset([FromBody] ResetPasswordDto dto)
     {
-        try
-        {
-            await _authService.ResetPasswordAsync(dto);
-            return Ok(new { message = "Password reset successfully. You can now log in with your new password." });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Failed to reset password.", detail = ex.Message });
-        }
+        await _authService.ResetPasswordAsync(dto);
+        return Ok(new { message = "Password reset successfully. You can now log in with your new password." });
     }
 }

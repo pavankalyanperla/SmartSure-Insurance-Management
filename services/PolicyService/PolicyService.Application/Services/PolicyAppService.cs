@@ -1,4 +1,5 @@
 using PolicyService.Application.DTOs;
+using PolicyService.Application.Exceptions;
 using PolicyService.Application.Interfaces;
 using PolicyService.Domain.Entities;
 using PolicyService.Domain.Enums;
@@ -45,7 +46,7 @@ public class PolicyAppService : IPolicyService
     public async Task<PremiumResponseDto> CalculatePremiumAsync(PremiumCalculationDto dto)
     {
         var policyType = await _repo.GetPolicyTypeByIdAsync(dto.PolicyTypeId)
-            ?? throw new InvalidOperationException("Policy type not found.");
+            ?? throw new PolicyTypeNotFoundException(dto.PolicyTypeId);
 
         var totalDays = (dto.EndDate - dto.StartDate).TotalDays;
         var years = (int)Math.Ceiling(totalDays / 365.0);
@@ -91,7 +92,7 @@ public class PolicyAppService : IPolicyService
     public async Task<PolicyResponseDto> CreatePolicyAsync(int userId, CreatePolicyDto dto)
     {
         var policyType = await _repo.GetPolicyTypeByIdAsync(dto.PolicyTypeId)
-            ?? throw new InvalidOperationException("Policy type not found.");
+            ?? throw new PolicyTypeNotFoundException(dto.PolicyTypeId);
 
         var premiumDto = new PremiumCalculationDto
         {
@@ -152,9 +153,12 @@ public class PolicyAppService : IPolicyService
     public async Task<PolicyResponseDto> UpdatePolicyStatusAsync(int policyId, string status)
     {
         var policy = await _repo.GetPolicyByIdAsync(policyId)
-            ?? throw new InvalidOperationException("Policy not found.");
+            ?? throw new PolicyNotFoundException(policyId);
 
-        policy.Status = Enum.Parse<PolicyStatus>(status, ignoreCase: true);
+        if (!Enum.TryParse<PolicyStatus>(status, ignoreCase: true, out var parsedStatus))
+            throw new InvalidPolicyStatusException(status);
+
+        policy.Status = parsedStatus;
         await _repo.UpdatePolicyAsync(policy);
         return MapToResponse(policy, policy.PolicyType.Name);
     }
@@ -172,7 +176,7 @@ public class PolicyAppService : IPolicyService
     public async Task<PaymentResponseDto> GetPaymentByPolicyIdAsync(int policyId)
     {
         var payment = await _repo.GetPaymentByPolicyIdAsync(policyId)
-            ?? throw new InvalidOperationException("Payment not found.");
+            ?? throw new PaymentNotFoundException(policyId);
 
         return MapPaymentToResponse(payment);
     }
@@ -186,16 +190,16 @@ public class PolicyAppService : IPolicyService
     public async Task<RenewalResponseDto> RenewPolicyAsync(int policyId, RenewPolicyDto dto, int userId)
     {
         var policy = await _repo.GetPolicyByIdAsync(policyId)
-            ?? throw new KeyNotFoundException($"Policy {policyId} not found");
+            ?? throw new PolicyNotFoundException(policyId);
 
         if (policy.UserId != userId)
-            throw new UnauthorizedAccessException("Not your policy");
+            throw new PolicyAccessDeniedException(policyId);
 
         if (policy.Status != PolicyStatus.Active && policy.Status != PolicyStatus.Expired)
-            throw new InvalidOperationException("Only Active or Expired policies can be renewed");
+            throw new PolicyNotRenewableException(policy.Status.ToString());
 
         var policyType = await _repo.GetPolicyTypeByIdAsync(policy.PolicyTypeId)
-            ?? throw new KeyNotFoundException("Policy type not found");
+            ?? throw new PolicyTypeNotFoundException(policy.PolicyTypeId);
 
         var newStartDate = policy.EndDate < DateTime.UtcNow
             ? DateTime.UtcNow

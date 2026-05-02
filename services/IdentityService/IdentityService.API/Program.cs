@@ -1,4 +1,5 @@
 using IdentityService.API.Helpers;
+using IdentityService.API.Middlewares;
 using IdentityService.Application.Interfaces;
 using IdentityService.Application.Services;
 using IdentityService.Domain.Interfaces;
@@ -111,6 +112,7 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseCors("AllowAngular");
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

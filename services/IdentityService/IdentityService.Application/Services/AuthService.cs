@@ -1,4 +1,5 @@
 using IdentityService.Application.DTOs;
+using IdentityService.Application.Exceptions;
 using IdentityService.Application.Interfaces;
 using IdentityService.Domain.Entities;
 using IdentityService.Domain.Interfaces;
@@ -21,7 +22,7 @@ public class AuthService : IAuthService
     {
         var exists = await _repository.EmailExistsAsync(dto.Email.ToLower());
         if (exists)
-            throw new InvalidOperationException("Email already registered.");
+            throw new EmailAlreadyRegisteredException(dto.Email.ToLower());
 
         var user = new User
         {
@@ -49,7 +50,7 @@ public class AuthService : IAuthService
         var exists = await _repository.EmailExistsAsync(normalizedEmail);
         if (exists)
         {
-            throw new InvalidOperationException("Email already registered.");
+            throw new EmailAlreadyRegisteredException(normalizedEmail);
         }
 
         var otpCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
@@ -65,23 +66,23 @@ public class AuthService : IAuthService
         var exists = await _repository.EmailExistsAsync(normalizedEmail);
         if (exists)
         {
-            throw new InvalidOperationException("Email already registered.");
+            throw new EmailAlreadyRegisteredException(normalizedEmail);
         }
 
         var otp = await _repository.GetLatestOtpAsync(normalizedEmail);
         if (otp is null || otp.IsUsed)
         {
-            throw new UnauthorizedAccessException("No active OTP found. Please request a new OTP.");
+            throw new OtpNotFoundException();
         }
 
         if (otp.ExpiresAt < DateTime.UtcNow)
         {
-            throw new UnauthorizedAccessException("OTP has expired. Please request a new OTP.");
+            throw new OtpExpiredException();
         }
 
         if (!string.Equals(otp.OtpCode, dto.OtpCode.Trim(), StringComparison.Ordinal))
         {
-            throw new UnauthorizedAccessException("Invalid OTP code.");
+            throw new InvalidOtpException();
         }
 
         var user = new User
@@ -110,10 +111,10 @@ public class AuthService : IAuthService
         var user = await _repository.GetByEmailAsync(dto.Email.ToLower());
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Invalid email or password.");
+            throw new InvalidCredentialsException();
 
         if (!user.IsActive)
-            throw new UnauthorizedAccessException("Account is deactivated.");
+            throw new AccountDeactivatedException();
 
         return new AuthResponseDto
         {
@@ -176,7 +177,7 @@ public class AuthService : IAuthService
         var normalizedEmail = dto.Email.ToLower().Trim();
         var user = await _repository.GetByEmailAsync(normalizedEmail);
         if (user is null)
-            throw new InvalidOperationException("No account found with that email address.");
+            throw new UserNotFoundException(normalizedEmail);
 
         var otpCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         await _repository.UpsertOtpAsync(normalizedEmail, otpCode, DateTime.UtcNow.AddMinutes(15));
@@ -191,13 +192,13 @@ public class AuthService : IAuthService
 
         var otp = await _repository.GetLatestOtpAsync(normalizedEmail);
         if (otp is null || otp.IsUsed)
-            throw new UnauthorizedAccessException("No active OTP found. Please request a new one.");
+            throw new OtpNotFoundException();
 
         if (otp.ExpiresAt < DateTime.UtcNow)
-            throw new UnauthorizedAccessException("OTP has expired. Please request a new one.");
+            throw new OtpExpiredException();
 
         if (!string.Equals(otp.OtpCode, dto.OtpCode.Trim(), StringComparison.Ordinal))
-            throw new UnauthorizedAccessException("Invalid OTP code.");
+            throw new InvalidOtpException();
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
         await _repository.UpdatePasswordAsync(normalizedEmail, passwordHash);

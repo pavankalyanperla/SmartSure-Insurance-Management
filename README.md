@@ -409,6 +409,8 @@ The fire-and-forget pattern means the API response never waits for the email. If
 
 **Queue:** `claim.status.notification` (durable, persistent messages)
 
+**Reliability note:** The notification task uses `IHttpClientFactory.CreateClient()` to create a scope-independent `HttpClient` with its own 25-second timeout and a separate `CancellationTokenSource(30s)`. This prevents the "operation was canceled" error that occurs when the original request scope is disposed before the background HTTP call to IdentityService completes.
+
 ## AdminService
 
 AdminService combines data from all services to render the admin dashboard and related admin views.
@@ -488,22 +490,23 @@ Authenticated smoke test completed successfully by:
 
 ## Build Status
 
-The following projects were validated with `dotnet build`:
+The following projects were validated with `dotnet build` / `ng build`:
 
-- IdentityService API
-- PolicyService API
-- ClaimsService API
-- AdminService API
-- ApiGateway
+- IdentityService API — 0 errors, 0 warnings
+- PolicyService API — 0 errors, 0 warnings
+- ClaimsService API — 0 errors, 0 warnings
+- AdminService API — 0 errors, 0 warnings
+- ApiGateway — 0 errors, 0 warnings
+- Angular frontend (`ng build`) — 0 errors, 0 warnings
 
 ## Notes
 
-- No connection strings were changed.
-- No JWT settings were changed.
-- No `appsettings.json` files were altered except for the gateway configuration needed for Swagger and JWT.
+- Connection strings follow the pattern `ConnectionStrings__DefaultConnection` for Docker and `ConnectionStrings:DefaultConnection` for local development — no hardcoded values in source.
+- JWT settings (`SecretKey`, `Issuer`, `Audience`) are identical across all services so tokens issued by IdentityService are accepted by every downstream service.
+- `appsettings.json` files were updated in IdentityService (email SMTP settings, RabbitMQ connection) and in gateway (Ocelot routes, Swagger aggregation). All other services use defaults.
 - No database or EF Core was added to the gateway.
 - No controllers were added to the gateway.
-- The gateway Swagger UI is served through Ocelot aggregation.
+- The gateway Swagger UI is served through Ocelot aggregation (`SwaggerForOcelot`).
 
 ## Troubleshooting
 
@@ -512,13 +515,19 @@ If the gateway Swagger page shows downstream errors:
 - confirm all four microservices are running
 - confirm the ports match the values listed above
 - confirm `/swagger/v1/swagger.json` is reachable for each service
-
 - start everything again with `powershell -File start-all-services.ps1 -NoBuild`
 
 If a protected endpoint returns `401`:
 
 - login through the gateway first
 - send the returned JWT as `Authorization: Bearer <token>`
+
+If a RabbitMQ notification email is never received:
+
+- confirm RabbitMQ is running (`http://localhost:15672` or `docker ps`)
+- confirm IdentityService is running — AdminService calls it to resolve the customer email
+- check AdminService logs for `Publishing notification for claim` and `Notification published successfully`
+- confirm SMTP credentials are set in `IdentityService/appsettings.json` under `EmailSettings`
 
 If you want to stop everything:
 
@@ -749,3 +758,269 @@ Comprehensive unit test projects for all 4 services:
   - Dashboard aggregation, user/claim management, reports, logs, notification publisher
 
 All 117 tests pass with 0 failures. 90%+ line coverage across all services.
+
+### 15) RabbitMQ Notification Bug Fix — "The operation was canceled"
+
+**Problem:** AdminService logs showed:
+```
+Could not fetch user info for notification: The operation was canceled.
+Skipping notification for claim 1 — customer email not found
+```
+
+**Root cause:** `AdminAppService` is registered as `Scoped`. The `HttpClient` injected via the constructor is `Transient` and implements `IDisposable`, so ASP.NET Core's DI container disposes it at the end of the request scope. The fire-and-forget `PublishClaimNotificationAsync` runs *after* the response is sent and the scope is torn down — the disposed `HttpClient` throws `TaskCanceledException` when `SendAsync` is called.
+
+**Fix applied to [AdminAppService.cs](services/AdminService/AdminService.Application/Services/AdminAppService.cs):**
+
+- Added `IHttpClientFactory _httpClientFactory` field alongside the existing `_httpClient`
+- `PublishClaimNotificationAsync` now calls `_httpClientFactory.CreateClient()` inside the method to create a **scope-independent** `HttpClient` not owned by the request scope
+- Set `httpClient.Timeout = TimeSpan.FromSeconds(25)` on the fresh client
+- Added `CancellationTokenSource(TimeSpan.FromSeconds(30))` — an independent token not linked to the original HTTP request lifecycle
+- JWT token captured before fire-and-forget (`var capturedToken = token`) while `HttpContext` is still alive, passed into the background method
+- Added 4 structured log statements tracing the full notification flow:
+  - `Publishing notification for claim {ClaimId}, fetching customer {CustomerId}`
+  - `Calling identity service: {Url}`
+  - `Got customer email {Email}, publishing to RabbitMQ`
+  - `Notification published successfully for claim {ClaimNumber} to {Email}`
+
+**Package added:** `Microsoft.Extensions.Http` (v10.0.0) to `AdminService.Application.csproj` so `IHttpClientFactory` resolves correctly in the Application layer.
+
+**Test fix in [AdminServiceTests.cs](services/AdminService.Tests/AdminServiceTests.cs):** Updated `BuildSut` to mock `IHttpClientFactory.CreateClient()` returning `new HttpClient(handler)` — existing notification tests continue to verify the full flow end-to-end.
+
+---
+
+## Exception Handling
+
+SmartSure uses a two-layer exception strategy across all four microservices:
+
+1. **Custom domain exceptions** — typed exception classes that live in each service's `Application/Exceptions/` folder. Every exception carries a `StatusCode` property so the HTTP status is decided at the point the exception is defined, not scattered across controllers.
+2. **Global exception middleware** — a single `GlobalExceptionMiddleware` registered in each service's `API/Middlewares/` folder. It wraps the entire request pipeline, catches every unhandled exception, maps it to a structured JSON response, and logs it at the correct severity level.
+
+### Response envelope
+
+Every error response from any service follows the same shape:
+
+```json
+{
+  "statusCode": 404,
+  "message": "Claim with ID 7 was not found.",
+  "detail": null
+}
+```
+
+`detail` is only populated in the `Development` environment and only for unexpected (non-domain) exceptions, so internal stack traces never leak to clients in production.
+
+### Logging strategy
+
+| Exception type | Log level | Rationale |
+|---|---|---|
+| Domain exception (expected business rule violation) | `Warning` | Known, handled, not a system fault |
+| `HttpRequestException` (AdminService downstream call) | `Warning` | External dependency issue, not a code bug |
+| Anything else | `Error` | Truly unexpected — needs investigation |
+
+### Pipeline position
+
+The middleware is registered **after** static files and CORS but **before** authentication, so it catches errors from every subsequent stage including auth failures that bubble up as unhandled exceptions.
+
+---
+
+### IdentityService — Exception Handling
+
+**Base class:** `IdentityException` (`Application/Exceptions/IdentityException.cs`)
+
+All identity exceptions extend `IdentityException`, which stores an `int StatusCode` alongside the message. The middleware pattern-matches on this base type to extract the status code automatically.
+
+**File:** `Application/Exceptions/EmailAlreadyRegisteredException.cs`
+- **HTTP status:** `409 Conflict`
+- **Thrown by:** `SendRegistrationOtpAsync`, `VerifyRegistrationOtpAsync`
+- **When:** A registration or OTP send is attempted with an email address that already has an account in the system.
+- **Message:** `The email '{email}' is already registered.`
+
+**File:** `Application/Exceptions/UserNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** `SendPasswordResetOtpAsync`
+- **When:** A forgot-password OTP is requested for an email that does not match any user account.
+- **Message:** `No account found with email '{email}'.`
+
+**File:** `Application/Exceptions/InvalidCredentialsException.cs`
+- **HTTP status:** `401 Unauthorized`
+- **Thrown by:** `LoginAsync`
+- **When:** The submitted email does not exist or the password does not match the stored hash. Both cases return the same message intentionally to avoid user enumeration.
+- **Message:** `Invalid email or password.`
+
+**File:** `Application/Exceptions/AccountDeactivatedException.cs`
+- **HTTP status:** `401 Unauthorized`
+- **Thrown by:** `LoginAsync`
+- **When:** The user's account exists and the password is correct, but an admin has set `IsActive = false` on the account.
+- **Message:** `Your account has been deactivated. Please contact support.`
+
+**File:** `Application/Exceptions/OtpNotFoundException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `VerifyRegistrationOtpAsync`, `ResetPasswordAsync`
+- **When:** No OTP record exists for the email, or the most recent OTP has already been marked as used. This covers the case where a user tries to verify without ever requesting an OTP, or tries to reuse an already-consumed code.
+- **Message:** `No active OTP found. Please request a new OTP.`
+
+**File:** `Application/Exceptions/OtpExpiredException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `VerifyRegistrationOtpAsync`, `ResetPasswordAsync`
+- **When:** An OTP record exists and is unused, but its `ExpiresAt` timestamp (15 minutes from creation) has passed.
+- **Message:** `OTP has expired. Please request a new OTP.`
+
+**File:** `Application/Exceptions/InvalidOtpException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `VerifyRegistrationOtpAsync`, `ResetPasswordAsync`
+- **When:** The OTP record is active and unexpired, but the code submitted by the user does not match the stored code. The comparison is ordinal (case-sensitive, exact match).
+- **Message:** `Invalid OTP code. Please check and try again.`
+
+**Middleware:** `API/Middlewares/GlobalExceptionMiddleware.cs`
+
+Catches all exceptions. `IdentityException` subclasses are mapped using their own `StatusCode`. Everything else returns `500` with a generic message. Stack traces are included in `detail` only in `Development`.
+
+---
+
+### PolicyService — Exception Handling
+
+**Base class:** `PolicyException` (`Application/Exceptions/PolicyException.cs`)
+
+All policy exceptions extend `PolicyException`, which carries `int StatusCode`. The middleware resolves the HTTP status directly from the exception instance.
+
+**File:** `Application/Exceptions/PolicyTypeNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** `CalculatePremiumAsync`, `CreatePolicyAsync`, `RenewPolicyAsync`
+- **When:** A policy type ID is referenced (for premium calculation, policy creation, or renewal) but no matching `PolicyType` row exists in the database.
+- **Message:** `Policy type with ID {id} was not found.`
+
+**File:** `Application/Exceptions/PolicyNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** `UpdatePolicyStatusAsync`, `RenewPolicyAsync`
+- **When:** An operation targets a specific policy by ID (status update or renewal) but no matching `Policy` row exists.
+- **Message:** `Policy with ID {id} was not found.`
+
+**File:** `Application/Exceptions/PaymentNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** `GetPaymentByPolicyIdAsync`
+- **When:** A request is made for the payment record of a policy, but no `Payment` row linked to that policy ID exists.
+- **Message:** `No payment record found for policy ID {policyId}.`
+
+**File:** `Application/Exceptions/PolicyAccessDeniedException.cs`
+- **HTTP status:** `403 Forbidden`
+- **Thrown by:** `RenewPolicyAsync`
+- **When:** A customer attempts to renew a policy that exists but belongs to a different user. The check compares the `UserId` on the policy against the authenticated user's ID from the JWT claim.
+- **Message:** `You do not have permission to access policy ID {policyId}.`
+
+**File:** `Application/Exceptions/PolicyNotRenewableException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `RenewPolicyAsync`
+- **When:** A renewal is attempted on a policy whose status is neither `Active` nor `Expired`. Policies in `Draft`, `Cancelled`, or any other status cannot be renewed.
+- **Message:** `Policy cannot be renewed because its current status is '{currentStatus}'. Only Active or Expired policies can be renewed.`
+
+**File:** `Application/Exceptions/InvalidPolicyStatusException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `UpdatePolicyStatusAsync`
+- **When:** An admin submits a status string that cannot be parsed into the `PolicyStatus` enum. Valid values are `Draft`, `Active`, `Expired`, `Cancelled`.
+- **Message:** `'{status}' is not a valid policy status.`
+
+**Middleware:** `API/Middlewares/GlobalExceptionMiddleware.cs`
+
+Catches all exceptions. `PolicyException` subclasses are mapped using their own `StatusCode`. Everything else returns `500`. Stack traces appear in `detail` only in `Development`.
+
+---
+
+### ClaimsService — Exception Handling
+
+**Base class:** `ClaimException` (`Application/Exceptions/ClaimException.cs`)
+
+All claims exceptions extend `ClaimException`, which carries `int StatusCode`. ClaimsService has the most exceptions because the claim lifecycle enforces strict state machine rules.
+
+**File:** `Application/Exceptions/ClaimNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** `SubmitClaimAsync`, `UpdateClaimStatusAsync`, `AddDocumentAsync`, `DeleteDocumentAsync`
+- **When:** Any operation references a claim ID that does not exist in the database.
+- **Message:** `Claim with ID {id} was not found.`
+
+**File:** `Application/Exceptions/ClaimDocumentNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** `DeleteDocumentAsync`
+- **When:** A document deletion is requested for a document ID that does not exist in the database.
+- **Message:** `Document with ID {id} was not found.`
+
+**File:** `Application/Exceptions/ClaimAccessDeniedException.cs`
+- **HTTP status:** `403 Forbidden`
+- **Thrown by:** `SubmitClaimAsync`, `DeleteDocumentAsync`
+- **When:** A customer attempts to submit or modify a claim that belongs to a different customer. The check compares `CustomerId` on the claim against the authenticated user's ID from the JWT.
+- **Message:** `You do not have permission to access claim ID {claimId}.`
+
+**File:** `Application/Exceptions/ClaimAlreadySubmittedException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `SubmitClaimAsync`
+- **When:** A customer calls the submit endpoint on a claim that is not in `Draft` status. A claim can only be submitted once — once it leaves `Draft` it cannot be submitted again.
+- **Message:** `Claim ID {claimId} has already been submitted and cannot be submitted again.`
+
+**File:** `Application/Exceptions/InvalidClaimStatusException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `UpdateClaimStatusAsync`
+- **When:** An admin submits a status string that cannot be parsed into the `ClaimStatus` enum. Valid values are `Draft`, `Submitted`, `UnderReview`, `Approved`, `Rejected`, `Closed`.
+- **Message:** `'{status}' is not a valid claim status.`
+
+**File:** `Application/Exceptions/InvalidClaimStatusTransitionException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `UpdateClaimStatusAsync`
+- **When:** The status string is valid but the transition from the current status to the requested status is not permitted by the claim lifecycle state machine. The allowed transitions are: `Submitted → UnderReview`, `UnderReview → Approved`, `UnderReview → Rejected`, `Approved → Closed`, `Rejected → Closed`. Any other combination is rejected.
+- **Message:** `Cannot transition claim from '{fromStatus}' to '{toStatus}'. This transition is not permitted.`
+
+**File:** `Application/Exceptions/ClaimNotEditableException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `DeleteDocumentAsync`
+- **When:** A customer attempts to delete a document from a claim that is no longer in `Draft` status. Documents can only be managed while the claim has not yet been submitted.
+- **Message:** `Claim ID {claimId} is in '{currentStatus}' status. Documents can only be managed on Draft claims.`
+
+**File:** `Application/Exceptions/DocumentClaimMismatchException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `DeleteDocumentAsync`
+- **When:** The document ID exists in the database but its `ClaimId` foreign key does not match the claim ID in the URL. This prevents a customer from deleting documents belonging to a different claim even if they own both claims.
+- **Message:** `Document ID {documentId} does not belong to claim ID {claimId}.`
+
+**Middleware:** `API/Middlewares/GlobalExceptionMiddleware.cs`
+
+Catches all exceptions. `ClaimException` subclasses are mapped using their own `StatusCode`. Everything else returns `500`. Stack traces appear in `detail` only in `Development`.
+
+---
+
+### AdminService — Exception Handling
+
+**Base class:** `AdminException` (`Application/Exceptions/AdminException.cs`)
+
+All admin exceptions extend `AdminException`, which carries `int StatusCode`. AdminService also handles `HttpRequestException` from downstream HTTP calls as a special case in the middleware, returning `502 Bad Gateway` rather than `500`.
+
+**File:** `Application/Exceptions/AdminUserNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** Admin user management operations
+- **When:** An operation targets a user ID that cannot be resolved from the IdentityService. This is distinct from a general HTTP failure — it means the downstream call succeeded but returned no user for the given ID.
+- **Message:** `User with ID {userId} was not found.`
+
+**File:** `Application/Exceptions/AdminClaimNotFoundException.cs`
+- **HTTP status:** `404 Not Found`
+- **Thrown by:** Admin claim management operations
+- **When:** An operation targets a claim ID that cannot be resolved from the ClaimsService. The downstream call succeeded but returned no claim for the given ID.
+- **Message:** `Claim with ID {claimId} was not found.`
+
+**File:** `Application/Exceptions/DownstreamServiceException.cs`
+- **HTTP status:** `502 Bad Gateway`
+- **Thrown by:** Any AdminService operation that calls IdentityService, PolicyService, or ClaimsService
+- **When:** A required downstream HTTP call fails in a way that prevents the operation from completing — for example, the target service is down, returns a non-success status, or times out. The `ServiceName` property records which service failed to aid in diagnosis.
+- **Message:** `The '{serviceName}' service is currently unavailable. {detail}`
+
+**File:** `Application/Exceptions/InvalidReportTypeException.cs`
+- **HTTP status:** `400 Bad Request`
+- **Thrown by:** `GenerateReportAsync`
+- **When:** An admin requests a report with a `reportType` string that cannot be parsed into the `ReportType` enum. Valid values are defined in `AdminService.Domain.Enums.ReportType`.
+- **Message:** `'{reportType}' is not a valid report type.`
+
+**Middleware:** `API/Middlewares/GlobalExceptionMiddleware.cs`
+
+AdminService middleware handles three exception categories:
+
+1. `AdminException` subclasses — mapped using their own `StatusCode`, logged as `Warning`
+2. `HttpRequestException` — mapped to `502 Bad Gateway`, logged as `Warning` (downstream dependency issue, not a code bug)
+3. Everything else — mapped to `500`, logged as `Error` with full stack trace in `Development`
+
+This three-tier handling is unique to AdminService because it is the only service that makes outbound HTTP calls to other services as part of its normal operation.

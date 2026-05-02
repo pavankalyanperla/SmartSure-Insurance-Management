@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClaimsService.Application.DTOs;
+using ClaimsService.Application.Exceptions;
 using ClaimsService.Application.Services;
 using ClaimsService.Domain.Entities;
 using ClaimsService.Domain.Enums;
@@ -111,35 +112,37 @@ public class ClaimServiceTests
     }
 
     [Test]
-    public async Task SubmitClaim_WhenClaimNotFound_ThrowsInvalidOperation()
+    public async Task SubmitClaim_WhenClaimNotFound_ThrowsClaimNotFoundException()
     {
         _repoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Claim?)null);
 
         Func<Task> act = () => _sut.SubmitClaimAsync(999, 1);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*not found*");
+        await act.Should().ThrowAsync<ClaimNotFoundException>()
+                 .WithMessage("*999*");
     }
 
     [Test]
-    public async Task SubmitClaim_FromAlreadySubmittedStatus_ThrowsInvalidOperation()
+    public async Task SubmitClaim_FromAlreadySubmittedStatus_ThrowsClaimAlreadySubmittedException()
     {
         var claim = new Claim { Id = 2, CustomerId = 5, Status = ClaimStatus.Submitted };
         _repoMock.Setup(r => r.GetByIdAsync(2)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.SubmitClaimAsync(2, 5);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already submitted*");
+        await act.Should().ThrowAsync<ClaimAlreadySubmittedException>()
+                 .WithMessage("*already been submitted*");
     }
 
     [Test]
-    public async Task SubmitClaim_ByDifferentCustomer_ThrowsUnauthorized()
+    public async Task SubmitClaim_ByDifferentCustomer_ThrowsClaimAccessDeniedException()
     {
         var claim = new Claim { Id = 3, CustomerId = 5, Status = ClaimStatus.Draft };
         _repoMock.Setup(r => r.GetByIdAsync(3)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.SubmitClaimAsync(3, customerId: 99);
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        await act.Should().ThrowAsync<ClaimAccessDeniedException>();
     }
 
     // ── GetClaimById ──────────────────────────────────────────────────────────
@@ -267,68 +270,74 @@ public class ClaimServiceTests
     // ── UpdateClaimStatus – invalid transitions ───────────────────────────────
 
     [Test]
-    public async Task UpdateStatus_DraftToApproved_ThrowsInvalidOperation()
+    public async Task UpdateStatus_DraftToApproved_ThrowsInvalidClaimStatusTransitionException()
     {
         var claim = new Claim { Id = 6, Status = ClaimStatus.Draft };
         _repoMock.Setup(r => r.GetByIdAsync(6)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.UpdateClaimStatusAsync(6, new UpdateClaimStatusDto { Status = "Approved" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Invalid status transition*");
+        await act.Should().ThrowAsync<InvalidClaimStatusTransitionException>()
+                 .WithMessage("*Cannot transition*");
     }
 
     [Test]
-    public async Task UpdateStatus_ApprovedToSubmitted_ThrowsInvalidOperation()
+    public async Task UpdateStatus_ApprovedToSubmitted_ThrowsInvalidClaimStatusTransitionException()
     {
         var claim = new Claim { Id = 7, Status = ClaimStatus.Approved };
         _repoMock.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.UpdateClaimStatusAsync(7, new UpdateClaimStatusDto { Status = "Submitted" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Invalid status transition*");
+        await act.Should().ThrowAsync<InvalidClaimStatusTransitionException>()
+                 .WithMessage("*Cannot transition*");
     }
 
     [Test]
-    public async Task UpdateStatus_SubmittedToRejected_ThrowsInvalidOperation()
+    public async Task UpdateStatus_SubmittedToRejected_ThrowsInvalidClaimStatusTransitionException()
     {
         var claim = new Claim { Id = 8, Status = ClaimStatus.Submitted };
         _repoMock.Setup(r => r.GetByIdAsync(8)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.UpdateClaimStatusAsync(8, new UpdateClaimStatusDto { Status = "Rejected" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Invalid status transition*");
+        await act.Should().ThrowAsync<InvalidClaimStatusTransitionException>()
+                 .WithMessage("*Cannot transition*");
     }
 
     [Test]
-    public async Task UpdateStatus_ClosedToAny_ThrowsInvalidOperation()
+    public async Task UpdateStatus_ClosedToAny_ThrowsInvalidClaimStatusTransitionException()
     {
         var claim = new Claim { Id = 9, Status = ClaimStatus.Closed };
         _repoMock.Setup(r => r.GetByIdAsync(9)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.UpdateClaimStatusAsync(9, new UpdateClaimStatusDto { Status = "Approved" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Invalid status transition*");
+        await act.Should().ThrowAsync<InvalidClaimStatusTransitionException>()
+                 .WithMessage("*Cannot transition*");
     }
 
     [Test]
-    public async Task UpdateStatus_WithInvalidStatusString_ThrowsInvalidOperation()
+    public async Task UpdateStatus_WithInvalidStatusString_ThrowsInvalidClaimStatusException()
     {
         var claim = new Claim { Id = 10, Status = ClaimStatus.Submitted };
         _repoMock.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.UpdateClaimStatusAsync(10, new UpdateClaimStatusDto { Status = "Banana" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Invalid claim status*");
+        await act.Should().ThrowAsync<InvalidClaimStatusException>()
+                 .WithMessage("*not a valid claim status*");
     }
 
     [Test]
-    public async Task UpdateStatus_WhenClaimNotFound_ThrowsInvalidOperation()
+    public async Task UpdateStatus_WhenClaimNotFound_ThrowsClaimNotFoundException()
     {
         _repoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Claim?)null);
 
         Func<Task> act = () => _sut.UpdateClaimStatusAsync(999, new UpdateClaimStatusDto { Status = "Approved" });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*not found*");
+        await act.Should().ThrowAsync<ClaimNotFoundException>()
+                 .WithMessage("*999*");
     }
 
     // ── AddDocument ───────────────────────────────────────────────────────────
@@ -356,37 +365,39 @@ public class ClaimServiceTests
     }
 
     [Test]
-    public async Task AddDocument_WhenClaimNotFound_ThrowsInvalidOperation()
+    public async Task AddDocument_WhenClaimNotFound_ThrowsClaimNotFoundException()
     {
         _repoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Claim?)null);
 
         Func<Task> act = () => _sut.AddDocumentAsync(999, "file.pdf", "/path/file.pdf", "application/pdf", 1024);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*not found*");
+        await act.Should().ThrowAsync<ClaimNotFoundException>()
+                 .WithMessage("*999*");
     }
 
     // ── DeleteDocument ────────────────────────────────────────────────────────
 
     [Test]
-    public async Task DeleteDocument_ByDifferentCustomer_ThrowsUnauthorized()
+    public async Task DeleteDocument_ByDifferentCustomer_ThrowsClaimAccessDeniedException()
     {
         var claim = new Claim { Id = 1, CustomerId = 5, Status = ClaimStatus.Draft };
         _repoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.DeleteDocumentAsync(1, 10, customerId: 99);
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        await act.Should().ThrowAsync<ClaimAccessDeniedException>();
     }
 
     [Test]
-    public async Task DeleteDocument_OnNonDraftClaim_ThrowsInvalidOperation()
+    public async Task DeleteDocument_OnNonDraftClaim_ThrowsClaimNotEditableException()
     {
         var claim = new Claim { Id = 1, CustomerId = 5, Status = ClaimStatus.Submitted };
         _repoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(claim);
 
         Func<Task> act = () => _sut.DeleteDocumentAsync(1, 10, customerId: 5);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*draft*");
+        await act.Should().ThrowAsync<ClaimNotEditableException>()
+                 .WithMessage("*Draft*");
     }
 
     // ── GetClaimsStats ────────────────────────────────────────────────────────
@@ -406,7 +417,6 @@ public class ClaimServiceTests
 
         result.Should().NotBeNull();
 
-        // Serialize to JSON and parse as dictionary to avoid cross-assembly dynamic binding issues
         var json = JsonSerializer.Serialize(result);
         using var doc = JsonDocument.Parse(json);
         doc.RootElement.GetProperty("totalClaims").GetInt32().Should().Be(10);

@@ -2,6 +2,7 @@ using FluentAssertions;
 using Moq;
 using NUnit.Framework;
 using PolicyService.Application.DTOs;
+using PolicyService.Application.Exceptions;
 using PolicyService.Application.Services;
 using PolicyService.Domain.Entities;
 using PolicyService.Domain.Enums;
@@ -72,7 +73,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_AgeUnder25_AppliesCorrectFactor()
     {
-        // Age 21, 1 year: 5000 + 5000×0.10 + 5000×0.10 = 6000
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -96,7 +96,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_AgeBetween25And40_AppliesCorrectFactor()
     {
-        // Age 30, 1 year: 5000 + 0 + 5000×0.10 = 5500
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -115,7 +114,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_AgeBetween40And55_AppliesCorrectFactor()
     {
-        // Age 50, 1 year: 5000 + 5000×0.20 + 5000×0.10 = 6500
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -134,7 +132,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_AgeOver55_AppliesCorrectFactor()
     {
-        // Age 60, 1 year: 5000 + 5000×0.50 + 5000×0.10 = 8000
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -150,12 +147,11 @@ public class PolicyServiceTests
         result.FinalAmount.Should().Be(8000m);
     }
 
-    // ── CalculatePremium – duration factors (years-based) ─────────────────────
+    // ── CalculatePremium – duration factors ───────────────────────────────────
 
     [Test]
     public async Task CalculatePremium_Duration1Year_AppliesCorrectFactor()
     {
-        // Age 30 (0%), 1 year exactly: 5000 + 0 + 5000×0.10 = 5500
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -173,7 +169,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_Duration2Years_AppliesCorrectFactor()
     {
-        // Age 30 (0%), 2 years exactly: 5000 + 0 + 5000×1.10 = 10500
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -192,7 +187,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_Duration3Years_AppliesCorrectFactor()
     {
-        // Age 30 (0%), 3 years exactly: 5000 + 0 + 5000×2.10 = 15500
         var pt = new PolicyType { Id = 1, BaseAmount = 5000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -211,7 +205,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_Duration9Months_StillCountsAs1Year()
     {
-        // 9 months → ceil(273/365) = 1 year → factor = 0.10
         var pt = new PolicyType { Id = 1, BaseAmount = 4000 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -226,7 +219,7 @@ public class PolicyServiceTests
     }
 
     [Test]
-    public async Task CalculatePremium_WithNonExistentPolicyType_ThrowsInvalidOperation()
+    public async Task CalculatePremium_WithNonExistentPolicyType_ThrowsPolicyTypeNotFoundException()
     {
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(99)).ReturnsAsync((PolicyType?)null);
 
@@ -235,7 +228,8 @@ public class PolicyServiceTests
             PolicyTypeId = 99, Age = 30, StartDate = DateTime.Today, EndDate = DateTime.Today.AddMonths(6)
         });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*not found*");
+        await act.Should().ThrowAsync<PolicyTypeNotFoundException>()
+                 .WithMessage("*99*");
     }
 
     // ── Final amount computation ──────────────────────────────────────────────
@@ -243,8 +237,6 @@ public class PolicyServiceTests
     [Test]
     public async Task CalculatePremium_FinalAmountIsRoundedToTwoDecimals()
     {
-        // Age 30 (0%), 3 months (1 year, 10%), base 3333
-        // final = 3333 + 0 + 333.30 = 3666.30
         var pt = new PolicyType { Id = 1, BaseAmount = 3333 };
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(1)).ReturnsAsync(pt);
 
@@ -289,7 +281,7 @@ public class PolicyServiceTests
     }
 
     [Test]
-    public async Task CreatePolicy_WithNonExistentPolicyType_ThrowsInvalidOperation()
+    public async Task CreatePolicy_WithNonExistentPolicyType_ThrowsPolicyTypeNotFoundException()
     {
         _repoMock.Setup(r => r.GetPolicyTypeByIdAsync(77)).ReturnsAsync((PolicyType?)null);
 
@@ -299,7 +291,8 @@ public class PolicyServiceTests
             StartDate = DateTime.Today, EndDate = DateTime.Today.AddMonths(3)
         });
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*not found*");
+        await act.Should().ThrowAsync<PolicyTypeNotFoundException>()
+                 .WithMessage("*77*");
     }
 
     // ── GetMyPolicies ─────────────────────────────────────────────────────────
@@ -375,13 +368,14 @@ public class PolicyServiceTests
     }
 
     [Test]
-    public async Task UpdatePolicyStatus_WithNonExistentPolicy_ThrowsInvalidOperation()
+    public async Task UpdatePolicyStatus_WithNonExistentPolicy_ThrowsPolicyNotFoundException()
     {
         _repoMock.Setup(r => r.GetPolicyByIdAsync(999)).ReturnsAsync((Policy?)null);
 
         Func<Task> act = () => _sut.UpdatePolicyStatusAsync(999, "Expired");
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*not found*");
+        await act.Should().ThrowAsync<PolicyNotFoundException>()
+                 .WithMessage("*999*");
     }
 
     // ── Counts and Revenue ────────────────────────────────────────────────────
@@ -421,13 +415,14 @@ public class PolicyServiceTests
     }
 
     [Test]
-    public async Task GetPaymentByPolicyId_WithNonExistentPolicy_ThrowsInvalidOperation()
+    public async Task GetPaymentByPolicyId_WithNonExistentPolicy_ThrowsPaymentNotFoundException()
     {
         _repoMock.Setup(r => r.GetPaymentByPolicyIdAsync(999)).ReturnsAsync((Payment?)null);
 
         Func<Task> act = () => _sut.GetPaymentByPolicyIdAsync(999);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*Payment not found*");
+        await act.Should().ThrowAsync<PaymentNotFoundException>()
+                 .WithMessage("*999*");
     }
 
     [Test]
@@ -451,7 +446,6 @@ public class PolicyServiceTests
     [Test]
     public async Task RenewPolicy_WithExpiredPolicy_StartsFromToday()
     {
-        // Expired policy: EndDate is in the past → renewal starts from today
         var pt     = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
         var policy = new Policy
         {
@@ -481,7 +475,6 @@ public class PolicyServiceTests
     [Test]
     public async Task RenewPolicy_WithActivePolicy_ExtendsDatesAndCreatesPayment()
     {
-        // Active policy: EndDate still in future → renewal extends from EndDate
         var pt        = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
         var oldEndDate = DateTime.UtcNow.AddDays(30);
         var policy    = new Policy
@@ -506,7 +499,7 @@ public class PolicyServiceTests
     }
 
     [Test]
-    public async Task RenewPolicy_WithCancelledPolicy_ThrowsException()
+    public async Task RenewPolicy_WithCancelledPolicy_ThrowsPolicyNotRenewableException()
     {
         var pt     = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
         var policy = new Policy { Id = 4, UserId = 1, PolicyTypeId = 1, Status = PolicyStatus.Cancelled, PolicyType = pt };
@@ -514,22 +507,23 @@ public class PolicyServiceTests
 
         Func<Task> act = () => _sut.RenewPolicyAsync(4, new RenewPolicyDto { Age = 30 }, userId: 1);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*Active or Expired*");
+        await act.Should().ThrowAsync<PolicyNotRenewableException>()
+                 .WithMessage("*Active or Expired*");
     }
 
     [Test]
-    public async Task RenewPolicy_NonExistentPolicy_ThrowsKeyNotFoundException()
+    public async Task RenewPolicy_NonExistentPolicy_ThrowsPolicyNotFoundException()
     {
         _repoMock.Setup(r => r.GetPolicyByIdAsync(999)).ReturnsAsync((Policy?)null);
 
         Func<Task> act = () => _sut.RenewPolicyAsync(999, new RenewPolicyDto { Age = 30 }, userId: 1);
 
-        await act.Should().ThrowAsync<KeyNotFoundException>().WithMessage("*999*");
+        await act.Should().ThrowAsync<PolicyNotFoundException>()
+                 .WithMessage("*999*");
     }
 
     [Test]
-    public async Task RenewPolicy_WithWrongUser_ThrowsUnauthorizedException()
+    public async Task RenewPolicy_WithWrongUser_ThrowsPolicyAccessDeniedException()
     {
         var pt     = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
         var policy = new Policy { Id = 5, UserId = 1, PolicyTypeId = 1, Status = PolicyStatus.Active, PolicyType = pt };
@@ -537,13 +531,12 @@ public class PolicyServiceTests
 
         Func<Task> act = () => _sut.RenewPolicyAsync(5, new RenewPolicyDto { Age = 30 }, userId: 2);
 
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        await act.Should().ThrowAsync<PolicyAccessDeniedException>();
     }
 
     [Test]
     public async Task RenewPolicy_IncrementsRenewalCount()
     {
-        // Policy already renewed twice → result should show count of 3
         var pt     = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
         var policy = new Policy
         {
@@ -567,8 +560,6 @@ public class PolicyServiceTests
     [Test]
     public async Task RenewPolicy_Uses1YearDurationFactor()
     {
-        // Renewal always uses durationFactor = 0.10 (1-year fixed)
-        // Age 30 (ageFactor = 0): premium = 5000 + 0 + 5000×0.10 = 5500
         var pt     = new PolicyType { Id = 1, Name = "Health", BaseAmount = 5000 };
         var policy = new Policy
         {
@@ -585,7 +576,6 @@ public class PolicyServiceTests
 
         var result = await _sut.RenewPolicyAsync(9, new RenewPolicyDto { Age = 30 }, userId: 7);
 
-        // base=5000, ageFactor=0.00, durationFactor=0.10 → 5000 + 0 + 500 = 5500
         result.NewPremiumAmount.Should().Be(5500m);
     }
 }

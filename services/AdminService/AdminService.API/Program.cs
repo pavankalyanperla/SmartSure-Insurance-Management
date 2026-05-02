@@ -1,5 +1,6 @@
 using AdminService.Application.Interfaces;
 using AdminService.Application.Services;
+using AdminService.API.Middlewares;
 using AdminService.Domain.Interfaces;
 using AdminService.Infrastructure.Data;
 using AdminService.Infrastructure.Messaging;
@@ -139,6 +140,8 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseRouting();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseCors("AllowAngular");
 

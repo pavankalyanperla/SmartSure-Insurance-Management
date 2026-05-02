@@ -1,4 +1,5 @@
 using ClaimsService.Application.DTOs;
+using ClaimsService.Application.Exceptions;
 using ClaimsService.Application.Interfaces;
 using ClaimsService.Domain.Entities;
 using ClaimsService.Domain.Enums;
@@ -36,13 +37,13 @@ public class ClaimAppService : IClaimService
     public async Task<ClaimResponseDto> SubmitClaimAsync(int claimId, int customerId)
     {
         var claim = await _repository.GetByIdAsync(claimId)
-            ?? throw new InvalidOperationException("Claim not found.");
+            ?? throw new ClaimNotFoundException(claimId);
 
         if (claim.CustomerId != customerId)
-            throw new UnauthorizedAccessException("You are not allowed to submit this claim.");
+            throw new ClaimAccessDeniedException(claimId);
 
         if (claim.Status != ClaimStatus.Draft)
-            throw new InvalidOperationException("Claim is already submitted.");
+            throw new ClaimAlreadySubmittedException(claimId);
 
         claim.Status = ClaimStatus.Submitted;
         claim.UpdatedAt = DateTime.UtcNow;
@@ -72,10 +73,10 @@ public class ClaimAppService : IClaimService
     public async Task<ClaimResponseDto> UpdateClaimStatusAsync(int claimId, UpdateClaimStatusDto dto)
     {
         var claim = await _repository.GetByIdAsync(claimId)
-            ?? throw new InvalidOperationException("Claim not found.");
+            ?? throw new ClaimNotFoundException(claimId);
 
         if (!Enum.TryParse<ClaimStatus>(dto.Status, true, out var newStatus))
-            throw new InvalidOperationException("Invalid claim status.");
+            throw new InvalidClaimStatusException(dto.Status);
 
         // Enforce strict transition rules
         var isValidTransition = (claim.Status, newStatus) switch
@@ -93,7 +94,7 @@ public class ClaimAppService : IClaimService
         };
 
         if (!isValidTransition)
-            throw new InvalidOperationException($"Invalid status transition from {claim.Status} to {newStatus}");
+            throw new InvalidClaimStatusTransitionException(claim.Status.ToString(), newStatus.ToString());
 
         claim.Status = newStatus;
         claim.AdminNote = dto.AdminNote;
@@ -106,7 +107,7 @@ public class ClaimAppService : IClaimService
     public async Task<ClaimDocumentDto> AddDocumentAsync(int claimId, string fileName, string filePath, string fileType, long fileSize)
     {
         var claim = await _repository.GetByIdAsync(claimId)
-            ?? throw new InvalidOperationException("Claim not found.");
+            ?? throw new ClaimNotFoundException(claimId);
 
         var document = new ClaimDocument
         {
@@ -138,19 +139,19 @@ public class ClaimAppService : IClaimService
     public async Task DeleteDocumentAsync(int claimId, int documentId, int customerId)
     {
         var claim = await _repository.GetByIdAsync(claimId)
-            ?? throw new InvalidOperationException("Claim not found.");
+            ?? throw new ClaimNotFoundException(claimId);
 
         if (claim.CustomerId != customerId)
-            throw new UnauthorizedAccessException("You are not allowed to modify this claim.");
+            throw new ClaimAccessDeniedException(claimId);
 
-        if (claim.Status != Domain.Enums.ClaimStatus.Draft)
-            throw new InvalidOperationException("Documents can only be removed from draft claims.");
+        if (claim.Status != ClaimStatus.Draft)
+            throw new ClaimNotEditableException(claimId, claim.Status.ToString());
 
         var document = await _repository.GetDocumentByIdAsync(documentId)
-            ?? throw new InvalidOperationException("Document not found.");
+            ?? throw new ClaimDocumentNotFoundException(documentId);
 
         if (document.ClaimId != claimId)
-            throw new InvalidOperationException("Document does not belong to this claim.");
+            throw new DocumentClaimMismatchException(documentId, claimId);
 
         // Delete physical file if it exists
         if (!string.IsNullOrEmpty(document.FilePath) && File.Exists(document.FilePath))

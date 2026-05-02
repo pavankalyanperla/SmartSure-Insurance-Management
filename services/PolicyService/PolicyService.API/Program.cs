@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PolicyService.API.Middlewares;
 using PolicyService.Application.Interfaces;
 using PolicyService.Application.Services;
 using PolicyService.Domain.Interfaces;
@@ -111,6 +112,7 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseCors("AllowAngular");
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

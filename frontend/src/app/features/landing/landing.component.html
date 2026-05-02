@@ -1,95 +1,403 @@
-<section class="landing-shell">
-  <nav class="navbar">
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- NAVBAR                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<nav class="navbar" [class.scrolled]="scrolled">
+  <div class="nav-inner">
     <div class="nav-brand">
-      <i class="pi pi-shield" style="color:#1a56db;font-size:24px"></i>
-      <span style="font-size:20px;font-weight:700;margin-left:8px">SmartSure</span>
+      <div class="nav-logo"><i class="pi pi-shield"></i></div>
+      <span>SmartSure</span>
     </div>
-    <div class="nav-buttons">
-      <a routerLink="/auth/login"
-         style="padding:8px 20px;border:1px solid #1a56db;color:#1a56db;border-radius:6px;text-decoration:none;font-weight:500;font-size:14px">
-        Login
-      </a>
-      <a routerLink="/auth/register"
-         style="padding:8px 20px;background:#1a56db;color:white;border-radius:6px;text-decoration:none;font-weight:500;font-size:14px">
-        Get Started
-      </a>
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#how-it-works" class="nav-link">How It Works</a>
+      <a href="#coverage" class="nav-link">Coverage</a>
     </div>
-  </nav>
-
-  <section class="hero-section">
-    <div class="hero-content">
-      <section class="hero-card">
-        <div class="hero-copy">
-          <span class="eyebrow">Insurance management reimagined</span>
-          <h1>Smart Insurance for a Secure Future</h1>
-          <p>Manage policies, claims, users, and reporting from one polished Angular experience backed by the SmartSure gateway.</p>
-          <div class="hero-actions">
-            <a routerLink="/auth/register" class="btn-primary">Get Started</a>
-            <a routerLink="/auth/login" class="btn-outline-primary">Login</a>
-          </div>
-          <div class="trust-badges">
-            <span class="badge badge-active">10,000+ Customers</span>
-            <span class="badge badge-approved">99.9% Uptime</span>
-            <span class="badge badge-admin">24/7 Support</span>
-          </div>
-        </div>
-        <div class="hero-panel">
-          <div class="glass-card">
-            <div class="glass-row"><span>Policies</span><strong>24,120</strong></div>
-            <div class="glass-row"><span>Claims</span><strong>8,440</strong></div>
-            <div class="glass-row"><span>Revenue</span><strong>$50M+</strong></div>
-          </div>
-        </div>
-      </section>
+    <div class="nav-actions">
+      <a routerLink="/auth/login" class="nav-btn-outline">Sign In</a>
+      <a routerLink="/auth/register" class="nav-btn-solid">Get Started <i class="pi pi-arrow-right"></i></a>
     </div>
-  </section>
+  </div>
+</nav>
 
-  <section class="features-section">
-    <div class="info-grid">
-      <article class="info-card">
-        <i class="pi pi-shield"></i>
-        <h3>Comprehensive Coverage</h3>
-        <p>Flexible policy types for every stage of life and every risk profile.</p>
-      </article>
-      <article class="info-card">
-        <i class="pi pi-clock"></i>
-        <h3>Instant Claims</h3>
-        <p>Fast submission and review flows designed for customers and administrators.</p>
-      </article>
-      <article class="info-card">
-        <i class="pi pi-lock"></i>
-        <h3>Bank-Level Security</h3>
-        <p>JWT-based access control, role-aware routing, and secure gateway calls.</p>
-      </article>
-    </div>
-  </section>
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- HERO                                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <!-- Animated background -->
+  <div class="hero-bg">
+    <div class="hero-blob b1"></div>
+    <div class="hero-blob b2"></div>
+    <div class="hero-blob b3"></div>
+    <div class="hero-grid"></div>
+  </div>
 
-  <section class="how-it-works">
-    <h2>How It Works</h2>
-    <div class="steps">
-      <div class="step-card"><span>01</span><h3>Register</h3><p>Create your account with OTP verification.</p></div>
-      <div class="step-card"><span>02</span><h3>Choose Policy</h3><p>Compare active policy types and calculate premium instantly.</p></div>
-      <div class="step-card"><span>03</span><h3>File Claims</h3><p>Track claim progress and upload documents from your portal.</p></div>
-    </div>
-  </section>
+  <!-- Floating particles -->
+  <div class="hero-particles">
+    @for (p of particles; track p.id) {
+      <div class="hparticle" [style.left]="p.left" [style.top]="p.top"
+           [style.width]="p.size" [style.height]="p.size"
+           [style.animation-duration]="p.dur" [style.animation-delay]="p.delay"></div>
+    }
+  </div>
 
-  <section class="stats-band">
-    <div><strong>10K+</strong><span>Customers</span></div>
-    <div><strong>$50M+</strong><span>Claims</span></div>
-    <div><strong>99.9%</strong><span>Uptime</span></div>
-    <div><strong>4.9★</strong><span>Rating</span></div>
-  </section>
-
-  <section class="cta-section">
-    <div class="cta-card">
-      <h2>Ready to secure your future?</h2>
-      <p>Join SmartSure today and manage your insurance journey with confidence.</p>
-      <div class="hero-actions">
-        <a routerLink="/auth/register" class="btn-primary">Create Account</a>
-        <a routerLink="/auth/login" class="btn-outline-primary">Sign In</a>
+  <div class="hero-inner">
+    <!-- Left copy -->
+    <div class="hero-copy">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-dot"></span>
+        Insurance Management Reimagined
+      </div>
+      <h1 class="hero-title">
+        Protect What<br>
+        <span class="gradient-text">Matters Most</span><br>
+        With SmartSure
+      </h1>
+      <p class="hero-desc">
+        One platform for health, auto, home and travel insurance.
+        Buy policies, file claims, and track everything — all in real time.
+      </p>
+      <div class="hero-cta-row">
+        <a routerLink="/auth/register" class="cta-primary">
+          <i class="pi pi-shield"></i> Start Free Today
+        </a>
+        <a routerLink="/auth/login" class="cta-ghost">
+          Sign In <i class="pi pi-arrow-right"></i>
+        </a>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-chip"><i class="pi pi-check-circle"></i> 10,000+ Customers</div>
+        <div class="trust-chip"><i class="pi pi-check-circle"></i> ₹50M+ Claims Paid</div>
+        <div class="trust-chip"><i class="pi pi-check-circle"></i> 99.9% Uptime</div>
       </div>
     </div>
-  </section>
 
-  <footer class="landing-footer">© 2026 SmartSure Insurance Management System</footer>
+    <!-- Right dashboard mockup -->
+    <div class="hero-visual">
+      <!-- Main card -->
+      <div class="mockup-card">
+        <div class="mockup-header">
+          <div class="mockup-dots">
+            <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          </div>
+          <span class="mockup-title">SmartSure Dashboard</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-kpi-row">
+            <div class="mkpi blue"><div class="mkpi-val">24,120</div><div class="mkpi-lbl">Active Policies</div></div>
+            <div class="mkpi green"><div class="mkpi-val">8,440</div><div class="mkpi-lbl">Claims Paid</div></div>
+            <div class="mkpi purple"><div class="mkpi-val">₹50M+</div><div class="mkpi-lbl">Revenue</div></div>
+          </div>
+          <div class="mockup-bar-section">
+            <div class="mbar-label">Claims by Status</div>
+            <div class="mbar-row"><span>Approved</span><div class="mbar-track"><div class="mbar-fill green" style="width:68%"></div></div><span>68%</span></div>
+            <div class="mbar-row"><span>Pending</span><div class="mbar-track"><div class="mbar-fill yellow" style="width:22%"></div></div><span>22%</span></div>
+            <div class="mbar-row"><span>Rejected</span><div class="mbar-track"><div class="mbar-fill red" style="width:10%"></div></div><span>10%</span></div>
+          </div>
+          <div class="mockup-activity">
+            <div class="mact-label">Recent Activity</div>
+            <div class="mact-item"><div class="mact-dot green"></div><span>Policy POL-2891 activated</span><span class="mact-time">2m ago</span></div>
+            <div class="mact-item"><div class="mact-dot blue"></div><span>Claim CLM-0441 approved</span><span class="mact-time">8m ago</span></div>
+            <div class="mact-item"><div class="mact-dot purple"></div><span>New user registered</span><span class="mact-time">15m ago</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating badge cards -->
+      <div class="float-badge fb-top">
+        <i class="pi pi-shield" style="color:#1a56db"></i>
+        <div><strong>Policy Active</strong><span>Health Insurance</span></div>
+      </div>
+      <div class="float-badge fb-bottom">
+        <i class="pi pi-check-circle" style="color:#10b981"></i>
+        <div><strong>Claim Approved</strong><span>₹45,000 processed</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="scroll-hint">
+    <div class="scroll-dot"></div>
+    <span>Scroll to explore</span>
+  </div>
 </section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- STATS BAND                                                              -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section class="stats-band">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-val">10K+</div>
+      <div class="stat-lbl">Happy Customers</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat-item">
+      <div class="stat-val">₹50M+</div>
+      <div class="stat-lbl">Claims Paid Out</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat-item">
+      <div class="stat-val">5</div>
+      <div class="stat-lbl">Policy Types</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat-item">
+      <div class="stat-val">99.9%</div>
+      <div class="stat-lbl">Platform Uptime</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat-item">
+      <div class="stat-val">4.9★</div>
+      <div class="stat-lbl">Customer Rating</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- COVERAGE TYPES                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section class="coverage-section" id="coverage">
+  <div class="section-inner">
+    <div class="section-label">What We Cover</div>
+    <h2 class="section-title">Insurance for Every<br><span class="gradient-text">Stage of Life</span></h2>
+    <p class="section-sub">Choose from five comprehensive policy types, each tailored to protect what matters most to you.</p>
+
+    <div class="coverage-grid">
+      <div class="cov-card cov-health">
+        <div class="cov-icon-wrap">❤️</div>
+        <h3>Health Insurance</h3>
+        <p>Hospitalization, surgery, ICU, diagnostics, medicines and ambulance charges.</p>
+        <div class="cov-meta">
+          <span class="cov-tag">Up to ₹5L cover</span>
+          <span class="cov-tag">18–65 yrs</span>
+        </div>
+        <div class="cov-footer">
+          <span class="cov-risk medium">Medium Risk</span>
+          <a routerLink="/auth/register" class="cov-cta">Get Quote →</a>
+        </div>
+      </div>
+
+      <div class="cov-card cov-life">
+        <div class="cov-icon-wrap">🛡️</div>
+        <h3>Life Insurance</h3>
+        <p>Death benefit, permanent disability and critical illness coverage for your family.</p>
+        <div class="cov-meta">
+          <span class="cov-tag">Up to ₹10L cover</span>
+          <span class="cov-tag">18–60 yrs</span>
+        </div>
+        <div class="cov-footer">
+          <span class="cov-risk high">High Risk</span>
+          <a routerLink="/auth/register" class="cov-cta">Get Quote →</a>
+        </div>
+      </div>
+
+      <div class="cov-card cov-auto">
+        <div class="cov-icon-wrap">🚗</div>
+        <h3>Auto Insurance</h3>
+        <p>Collision damage, theft, third-party liability and natural calamity protection.</p>
+        <div class="cov-meta">
+          <span class="cov-tag">Up to ₹2L cover</span>
+          <span class="cov-tag">18–70 yrs</span>
+        </div>
+        <div class="cov-footer">
+          <span class="cov-risk medium">Medium Risk</span>
+          <a routerLink="/auth/register" class="cov-cta">Get Quote →</a>
+        </div>
+      </div>
+
+      <div class="cov-card cov-home">
+        <div class="cov-icon-wrap">🏠</div>
+        <h3>Home Insurance</h3>
+        <p>Fire, flood, burglary, earthquake, cyclone and structural damage coverage.</p>
+        <div class="cov-meta">
+          <span class="cov-tag">Up to ₹3L cover</span>
+          <span class="cov-tag">21–80 yrs</span>
+        </div>
+        <div class="cov-footer">
+          <span class="cov-risk low">Low Risk</span>
+          <a routerLink="/auth/register" class="cov-cta">Get Quote →</a>
+        </div>
+      </div>
+
+      <div class="cov-card cov-travel">
+        <div class="cov-icon-wrap">✈️</div>
+        <h3>Travel Insurance</h3>
+        <p>Medical emergencies abroad, trip cancellation, lost baggage and flight delays.</p>
+        <div class="cov-meta">
+          <span class="cov-tag">Up to ₹1L cover</span>
+          <span class="cov-tag">18–70 yrs</span>
+        </div>
+        <div class="cov-footer">
+          <span class="cov-risk low">Low Risk</span>
+          <a routerLink="/auth/register" class="cov-cta">Get Quote →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- FEATURES                                                                -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section class="features-section" id="features">
+  <div class="section-inner">
+    <div class="section-label">Why SmartSure</div>
+    <h2 class="section-title">Everything You Need,<br><span class="gradient-text">Nothing You Don't</span></h2>
+
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon blue"><i class="pi pi-shield"></i></div>
+        <h3>Comprehensive Coverage</h3>
+        <p>Five policy types covering health, life, auto, home and travel — all in one platform.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon green"><i class="pi pi-bolt"></i></div>
+        <h3>Instant Premium Calc</h3>
+        <p>Age and duration-based additive formula gives you a transparent breakdown in seconds.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon purple"><i class="pi pi-file"></i></div>
+        <h3>Easy Claims</h3>
+        <p>Submit claims, upload documents and track status from Draft to Closed in your portal.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon orange"><i class="pi pi-bell"></i></div>
+        <h3>Real-Time Alerts</h3>
+        <p>Email notifications via RabbitMQ keep you updated on every claim status change.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon teal"><i class="pi pi-lock"></i></div>
+        <h3>Bank-Level Security</h3>
+        <p>JWT authentication, OTP email verification and role-based access control throughout.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon red"><i class="pi pi-credit-card"></i></div>
+        <h3>Razorpay Payments</h3>
+        <p>Secure online payments for policy purchase and renewal powered by Razorpay.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- HOW IT WORKS                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section class="hiw-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="section-label">Simple Process</div>
+    <h2 class="section-title">Get Covered in<br><span class="gradient-text">3 Easy Steps</span></h2>
+
+    <div class="hiw-timeline">
+      <div class="hiw-step">
+        <div class="hiw-num">01</div>
+        <div class="hiw-connector"></div>
+        <div class="hiw-card">
+          <div class="hiw-icon">👤</div>
+          <h3>Create Account</h3>
+          <p>Register with your email and verify with a one-time OTP. Takes under 2 minutes.</p>
+          <a routerLink="/auth/register" class="hiw-link">Register now →</a>
+        </div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">02</div>
+        <div class="hiw-connector"></div>
+        <div class="hiw-card">
+          <div class="hiw-icon">📋</div>
+          <h3>Choose Your Policy</h3>
+          <p>Browse policy types, enter your age and dates, and see a full premium breakdown instantly.</p>
+          <a routerLink="/auth/register" class="hiw-link">See policies →</a>
+        </div>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">03</div>
+        <div class="hiw-connector last"></div>
+        <div class="hiw-card">
+          <div class="hiw-icon">✅</div>
+          <h3>Pay &amp; Stay Protected</h3>
+          <p>Complete payment via Razorpay and your policy activates immediately. File claims anytime.</p>
+          <a routerLink="/auth/register" class="hiw-link">Get started →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- TESTIMONIALS                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section class="testimonials-section">
+  <div class="section-inner">
+    <div class="section-label">Customer Stories</div>
+    <h2 class="section-title">Trusted by <span class="gradient-text">Thousands</span></h2>
+
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p>"Filed a health claim and it was approved within 48 hours. The portal is incredibly easy to use."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#1a56db,#3b82f6)">R</div>
+          <div><strong>Rahul Sharma</strong><span>Health Insurance Customer</span></div>
+        </div>
+      </div>
+      <div class="testi-card featured">
+        <div class="testi-stars">★★★★★</div>
+        <p>"The premium calculator is transparent and fair. I could see exactly how my age and duration affected the price."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">P</div>
+          <div><strong>Priya Nair</strong><span>Auto Insurance Customer</span></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p>"Got email notifications for every step of my claim. Never had to call anyone — everything was in the portal."</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:linear-gradient(135deg,#059669,#34d399)">A</div>
+          <div><strong>Arjun Mehta</strong><span>Home Insurance Customer</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- CTA BANNER                                                              -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <div class="cta-blob c1"></div>
+    <div class="cta-blob c2"></div>
+    <div class="cta-content">
+      <div class="cta-badge">🚀 Join 10,000+ customers</div>
+      <h2>Ready to Secure<br>Your Future?</h2>
+      <p>Create your free account today and get covered in minutes. No paperwork, no hassle.</p>
+      <div class="cta-btns">
+        <a routerLink="/auth/register" class="cta-primary-white">
+          <i class="pi pi-shield"></i> Get Started Free
+        </a>
+        <a routerLink="/auth/login" class="cta-outline-white">
+          Already a member? Sign In
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<footer class="landing-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo"><i class="pi pi-shield"></i></div>
+      <span>SmartSure</span>
+    </div>
+    <div class="footer-links">
+      <a href="#features">Features</a>
+      <a href="#coverage">Coverage</a>
+      <a href="#how-it-works">How It Works</a>
+      <a routerLink="/auth/login">Sign In</a>
+      <a routerLink="/auth/register">Register</a>
+    </div>
+    <div class="footer-copy">© 2026 SmartSure Insurance Management System. All rights reserved.</div>
+  </div>
+</footer>

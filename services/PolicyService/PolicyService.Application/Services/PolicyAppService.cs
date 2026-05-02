@@ -21,11 +21,20 @@ public class PolicyAppService : IPolicyService
         var types = await _repo.GetAllPolicyTypesAsync();
         return types.Select(t => new PolicyTypeResponseDto
         {
-            Id = t.Id,
-            Name = t.Name,
-            Description = t.Description,
-            BaseAmount = t.BaseAmount,
-            IsActive = t.IsActive
+            Id             = t.Id,
+            Name           = t.Name,
+            Description    = t.Description,
+            BaseAmount     = t.BaseAmount,
+            IsActive       = t.IsActive,
+            CoverageDetails = t.CoverageDetails,
+            Exclusions     = t.Exclusions,
+            ClaimLimit     = t.ClaimLimit,
+            MinAge         = t.MinAge,
+            MaxAge         = t.MaxAge,
+            DurationMonths = t.DurationMonths,
+            RiskCategory   = t.RiskCategory,
+            AutoRenewal    = t.AutoRenewal,
+            GracePeriodDays = t.GracePeriodDays
         }).ToList();
     }
 
@@ -35,11 +44,20 @@ public class PolicyAppService : IPolicyService
         if (type is null) return null;
         return new PolicyTypeResponseDto
         {
-            Id = type.Id,
-            Name = type.Name,
-            Description = type.Description,
-            BaseAmount = type.BaseAmount,
-            IsActive = type.IsActive
+            Id             = type.Id,
+            Name           = type.Name,
+            Description    = type.Description,
+            BaseAmount     = type.BaseAmount,
+            IsActive       = type.IsActive,
+            CoverageDetails = type.CoverageDetails,
+            Exclusions     = type.Exclusions,
+            ClaimLimit     = type.ClaimLimit,
+            MinAge         = type.MinAge,
+            MaxAge         = type.MaxAge,
+            DurationMonths = type.DurationMonths,
+            RiskCategory   = type.RiskCategory,
+            AutoRenewal    = type.AutoRenewal,
+            GracePeriodDays = type.GracePeriodDays
         };
     }
 

@@ -29,6 +29,17 @@ public class PolicyTypeResponseDto
     public string Description { get; set; } = string.Empty;
     public decimal BaseAmount { get; set; }
     public bool IsActive { get; set; }
+
+    // Coverage details shown to the customer on the buy-policy page
+    public string CoverageDetails { get; set; } = string.Empty;
+    public string Exclusions { get; set; } = string.Empty;
+    public decimal ClaimLimit { get; set; }
+    public int MinAge { get; set; }
+    public int MaxAge { get; set; }
+    public int DurationMonths { get; set; }
+    public string RiskCategory { get; set; } = string.Empty;
+    public bool AutoRenewal { get; set; }
+    public int GracePeriodDays { get; set; }
 }
 
 public class PremiumCalculationDto

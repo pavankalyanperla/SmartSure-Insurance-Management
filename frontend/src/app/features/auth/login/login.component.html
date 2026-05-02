@@ -1,53 +1,130 @@
 <div class="auth-page">
+
+  <!-- ── Left branding panel ─────────────────────────────────────────────── -->
   <div class="auth-left">
-    <div class="auth-brand"><i class="pi pi-shield"></i><span>SmartSure</span></div>
+
+    <!-- Animated background blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <!-- Floating particles -->
+    <div class="particle p1"></div>
+    <div class="particle p2"></div>
+    <div class="particle p3"></div>
+    <div class="particle p4"></div>
+    <div class="particle p5"></div>
+
+    <!-- Brand -->
+    <div class="auth-brand">
+      <div class="brand-icon-wrap"><i class="pi pi-shield"></i></div>
+      <span>SmartSure</span>
+    </div>
+
+    <!-- Hero -->
     <div class="auth-hero-content">
-      <h1>Protect What Matters Most</h1>
-      <p>Your trusted partner for comprehensive insurance management</p>
-      <div class="insurance-icons-grid">
-        <div class="insurance-icon-card"><i class="pi pi-heart" style="color:#ef4444"></i><span>Health</span></div>
-        <div class="insurance-icon-card"><i class="pi pi-car" style="color:#3b82f6"></i><span>Auto</span></div>
-        <div class="insurance-icon-card"><i class="pi pi-home" style="color:#10b981"></i><span>Home</span></div>
-        <div class="insurance-icon-card"><i class="pi pi-globe" style="color:#f59e0b"></i><span>Travel</span></div>
+      <div class="hero-badge">🛡️ Trusted Insurance Platform</div>
+      <h1>Protect What<br><span class="hero-highlight">Matters Most</span></h1>
+      <p>Your all-in-one platform for managing health, auto, home and travel insurance — simple, fast, and secure.</p>
+
+      <!-- Animated insurance cards -->
+      <div class="insurance-cards-row">
+        <div class="ins-card ins-health">
+          <div class="ins-card-icon">❤️</div>
+          <div class="ins-card-label">Health</div>
+          <div class="ins-card-sub">Medical cover</div>
+        </div>
+        <div class="ins-card ins-auto">
+          <div class="ins-card-icon">🚗</div>
+          <div class="ins-card-label">Auto</div>
+          <div class="ins-card-sub">Vehicle cover</div>
+        </div>
+        <div class="ins-card ins-home">
+          <div class="ins-card-icon">🏠</div>
+          <div class="ins-card-label">Home</div>
+          <div class="ins-card-sub">Property cover</div>
+        </div>
+        <div class="ins-card ins-travel">
+          <div class="ins-card-icon">✈️</div>
+          <div class="ins-card-label">Travel</div>
+          <div class="ins-card-sub">Trip cover</div>
+        </div>
       </div>
-      <div class="auth-stats">
-        <div class="auth-stat"><div class="auth-stat-value">10K+</div><div class="auth-stat-label">Customers</div></div>
-        <div class="auth-stat"><div class="auth-stat-value">$50M+</div><div class="auth-stat-label">Claims Paid</div></div>
-        <div class="auth-stat"><div class="auth-stat-value">99.9%</div><div class="auth-stat-label">Uptime</div></div>
+
+      <!-- Trust indicators -->
+      <div class="trust-row">
+        <div class="trust-item">
+          <div class="trust-val">10K+</div>
+          <div class="trust-lbl">Customers</div>
+        </div>
+        <div class="trust-divider"></div>
+        <div class="trust-item">
+          <div class="trust-val">₹50M+</div>
+          <div class="trust-lbl">Claims Paid</div>
+        </div>
+        <div class="trust-divider"></div>
+        <div class="trust-item">
+          <div class="trust-val">99.9%</div>
+          <div class="trust-lbl">Uptime</div>
+        </div>
+      </div>
+
+      <!-- Feature pills -->
+      <div class="feature-pills">
+        <span class="pill">✅ Instant Policy</span>
+        <span class="pill">🔒 Secure Payments</span>
+        <span class="pill">📧 Email Alerts</span>
       </div>
     </div>
   </div>
 
+  <!-- ── Right form panel ────────────────────────────────────────────────── -->
   <div class="auth-right">
     <div class="auth-form-container">
-      <h2>Sign In</h2>
+
+      <!-- Form header -->
+      <div class="form-header">
+        <div class="form-logo"><i class="pi pi-shield"></i></div>
+        <h2>Welcome Back</h2>
+        <p class="form-sub">Sign in to your SmartSure account</p>
+      </div>
+
       <form [formGroup]="form" (ngSubmit)="login()">
         <div class="form-group">
-          <label class="form-label">Email</label>
-          <input class="form-input" type="email" formControlName="email" placeholder="you@example.com" />
+          <label class="form-label">Email Address</label>
+          <div class="input-icon-wrap">
+            <i class="pi pi-envelope input-icon"></i>
+            <input class="form-input input-with-icon" type="email" formControlName="email" placeholder="you@example.com" />
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
           <div class="input-password-wrap">
-            <input class="form-input" [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Enter your password" />
+            <i class="pi pi-lock input-icon"></i>
+            <input class="form-input input-with-icon" [type]="showPassword ? 'text' : 'password'" formControlName="password" placeholder="Enter your password" />
             <button type="button" class="btn-eye" (click)="showPassword = !showPassword" tabindex="-1">
               <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
           </div>
         </div>
-        <button class="btn-primary w-full" type="submit" [disabled]="isSubmitting">{{ isSubmitting ? 'Signing in...' : 'Sign In' }}</button>
-        <div style="text-align:right;margin-top:.6rem">
-          <a routerLink="/auth/forgot-password" style="font-size:13px;color:#1a56db;font-weight:600;text-decoration:none">Forgot Password?</a>
+
+        <div style="text-align:right;margin-bottom:.85rem">
+          <a routerLink="/auth/forgot-password" class="forgot-link">Forgot Password?</a>
         </div>
+
+        <button class="btn-auth-submit" type="submit" [disabled]="isSubmitting">
+          @if (isSubmitting) {
+            <i class="pi pi-spin pi-spinner"></i> Signing in...
+          } @else {
+            <i class="pi pi-sign-in"></i> Sign In
+          }
+        </button>
       </form>
 
-      <div class="demo-box">
-        <strong>Demo Credentials</strong>
-        <p>Admin: admin@smartsure.com / Admin@123</p>
-        <p>Customer: john@example.com / Customer@123</p>
-      </div>
-
-      <p class="switch-link">No account yet? <a routerLink="/auth/register">Create one</a></p>
+      <div class="form-divider"><span>New to SmartSure?</span></div>
+      <a routerLink="/auth/register" class="btn-auth-secondary">
+        <i class="pi pi-user-plus"></i> Create an Account
+      </a>
     </div>
   </div>
 </div>

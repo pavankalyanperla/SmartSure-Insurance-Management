@@ -1,40 +1,99 @@
 <div class="auth-page">
+
+  <!-- ── Left branding panel ─────────────────────────────────────────────── -->
   <div class="auth-left">
-    <div class="auth-brand"><i class="pi pi-shield"></i><span>SmartSure</span></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="particle p1"></div>
+    <div class="particle p2"></div>
+    <div class="particle p3"></div>
+    <div class="particle p4"></div>
+    <div class="particle p5"></div>
+
+    <div class="auth-brand">
+      <div class="brand-icon-wrap"><i class="pi pi-shield"></i></div>
+      <span>SmartSure</span>
+    </div>
+
     <div class="auth-hero-content">
-      <h1>Protect What Matters Most</h1>
-      <p>Your trusted partner for comprehensive insurance management</p>
-      <div class="insurance-icons-grid">
-        <div class="insurance-icon-card"><i class="pi pi-heart" style="color:#ef4444"></i><span>Health</span></div>
-        <div class="insurance-icon-card"><i class="pi pi-car" style="color:#3b82f6"></i><span>Auto</span></div>
-        <div class="insurance-icon-card"><i class="pi pi-home" style="color:#10b981"></i><span>Home</span></div>
-        <div class="insurance-icon-card"><i class="pi pi-globe" style="color:#f59e0b"></i><span>Travel</span></div>
+      <div class="hero-badge">🚀 Join Thousands of Members</div>
+      <h1>Start Your<br><span class="hero-highlight">Protection Journey</span></h1>
+      <p>Create your free account and get access to all insurance products in minutes.</p>
+
+      <!-- Step progress visual -->
+      <div class="reg-steps">
+        <div class="reg-step" [class.active]="isStep1" [class.done]="!isStep1">
+          <div class="reg-step-circle">
+            @if (!isStep1) { <i class="pi pi-check"></i> } @else { 1 }
+          </div>
+          <div class="reg-step-text">
+            <strong>Your Details</strong>
+            <span>Name, email & password</span>
+          </div>
+        </div>
+        <div class="reg-step-connector" [class.done]="!isStep1"></div>
+        <div class="reg-step" [class.active]="!isStep1">
+          <div class="reg-step-circle">2</div>
+          <div class="reg-step-text">
+            <strong>Verify Email</strong>
+            <span>Enter OTP from inbox</span>
+          </div>
+        </div>
       </div>
-      <div class="auth-stats">
-        <div class="auth-stat"><div class="auth-stat-value">10K+</div><div class="auth-stat-label">Customers</div></div>
-        <div class="auth-stat"><div class="auth-stat-value">$50M+</div><div class="auth-stat-label">Claims Paid</div></div>
-        <div class="auth-stat"><div class="auth-stat-value">99.9%</div><div class="auth-stat-label">Uptime</div></div>
+
+      <div class="insurance-cards-row">
+        <div class="ins-card ins-health"><div class="ins-card-icon">❤️</div><div class="ins-card-label">Health</div></div>
+        <div class="ins-card ins-auto"><div class="ins-card-icon">🚗</div><div class="ins-card-label">Auto</div></div>
+        <div class="ins-card ins-home"><div class="ins-card-icon">🏠</div><div class="ins-card-label">Home</div></div>
+        <div class="ins-card ins-travel"><div class="ins-card-icon">✈️</div><div class="ins-card-label">Travel</div></div>
+      </div>
+
+      <div class="feature-pills">
+        <span class="pill">✅ Free to Join</span>
+        <span class="pill">🔒 OTP Verified</span>
+        <span class="pill">⚡ Instant Access</span>
       </div>
     </div>
   </div>
 
+  <!-- ── Right form panel ────────────────────────────────────────────────── -->
   <div class="auth-right">
     <div class="auth-form-container">
-      <h2>{{ isStep1 ? 'Create Account' : 'Verify OTP' }}</h2>
+
+      <div class="form-header">
+        <div class="form-logo"><i class="pi pi-user-plus"></i></div>
+        <h2>{{ isStep1 ? 'Create Account' : 'Verify Your Email' }}</h2>
+        <p class="form-sub">{{ isStep1 ? 'Fill in your details to get started' : 'Enter the OTP sent to ' + email }}</p>
+      </div>
+
       @if (errorMessage) {
-        <p class="form-error">{{ errorMessage }}</p>
+        <div class="form-alert form-alert-error"><i class="pi pi-times-circle"></i> {{ errorMessage }}</div>
       }
       @if (successMessage) {
-        <p class="form-success">{{ successMessage }}</p>
+        <div class="form-alert form-alert-success"><i class="pi pi-check-circle"></i> {{ successMessage }}</div>
       }
 
       @if (isStep1) {
-        <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" [(ngModel)]="fullName" (blur)="fullName = toTitleCase(fullName)" /></div>
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" [(ngModel)]="email" /></div>
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <div class="input-icon-wrap">
+            <i class="pi pi-user input-icon"></i>
+            <input class="form-input input-with-icon" [(ngModel)]="fullName" (blur)="fullName = toTitleCase(fullName)" placeholder="John Smith" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <div class="input-icon-wrap">
+            <i class="pi pi-envelope input-icon"></i>
+            <input class="form-input input-with-icon" type="email" [(ngModel)]="email" placeholder="you@example.com" />
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label">Password</label>
           <div class="input-password-wrap">
-            <input class="form-input" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" />
+            <i class="pi pi-lock input-icon"></i>
+            <input class="form-input input-with-icon" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" placeholder="Min. 6 characters" />
             <button type="button" class="btn-eye" (click)="showPassword = !showPassword" tabindex="-1">
               <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
@@ -43,25 +102,53 @@
         <div class="form-group">
           <label class="form-label">Confirm Password</label>
           <div class="input-password-wrap">
-            <input class="form-input" [type]="showConfirmPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" />
+            <i class="pi pi-lock input-icon"></i>
+            <input class="form-input input-with-icon" [type]="showConfirmPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" placeholder="Repeat password" />
             <button type="button" class="btn-eye" (click)="showConfirmPassword = !showConfirmPassword" tabindex="-1">
               <i [class]="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
           </div>
         </div>
-        <button class="btn-primary w-full" type="button" (click)="sendOtp()" [disabled]="isSending">{{ isSending ? 'Sending...' : 'Send OTP' }}</button>
+        <button class="btn-auth-submit" type="button" (click)="sendOtp()" [disabled]="isSending">
+          @if (isSending) {
+            <i class="pi pi-spin pi-spinner"></i> Sending OTP...
+          } @else {
+            <i class="pi pi-send"></i> Send OTP & Continue
+          }
+        </button>
       } @else {
-        <p>OTP sent to <strong>{{ email }}</strong></p>
-        <div class="form-group"><label class="form-label">OTP Code</label><input class="form-input otp-input" maxlength="6" [(ngModel)]="otpCode" /></div>
-        <div class="countdown">Time remaining: {{ formatTime(timeLeft) }}</div>
-        <div class="otp-actions">
-          <button class="btn-primary" type="button" (click)="verifyOtp()" [disabled]="isVerifying">{{ isVerifying ? 'Verifying...' : 'Verify & Create Account' }}</button>
-          <button class="btn-outline-primary" type="button" (click)="resendOtp()" [disabled]="isResending">{{ isResending ? 'Sending...' : 'Resend OTP' }}</button>
-          <button class="btn-view-light" type="button" (click)="goBack()">Change Email</button>
+        <div class="otp-sent-banner">
+          <i class="pi pi-envelope"></i>
+          OTP sent to <strong>{{ email }}</strong>
+        </div>
+        <div class="form-group" style="margin-top:1rem">
+          <label class="form-label">OTP Code</label>
+          <input class="form-input otp-input" maxlength="6" [(ngModel)]="otpCode" placeholder="_ _ _ _ _ _" />
+        </div>
+        <div class="countdown-row">
+          <span class="countdown"><i class="pi pi-clock"></i> {{ formatTime(timeLeft) }}</span>
+          <button class="btn-link" type="button" (click)="resendOtp()" [disabled]="isResending">
+            {{ isResending ? 'Sending...' : 'Resend OTP' }}
+          </button>
+        </div>
+        <div class="otp-btn-group">
+          <button class="btn-auth-submit" type="button" (click)="verifyOtp()" [disabled]="isVerifying">
+            @if (isVerifying) {
+              <i class="pi pi-spin pi-spinner"></i> Verifying...
+            } @else {
+              <i class="pi pi-check-circle"></i> Verify & Create Account
+            }
+          </button>
+          <button class="btn-auth-ghost" type="button" (click)="goBack()">
+            <i class="pi pi-arrow-left"></i> Change Email
+          </button>
         </div>
       }
 
-      <p class="switch-link">Already registered? <a routerLink="/auth/login">Sign in</a></p>
+      <div class="form-divider"><span>Already have an account?</span></div>
+      <a routerLink="/auth/login" class="btn-auth-secondary">
+        <i class="pi pi-sign-in"></i> Sign In Instead
+      </a>
     </div>
   </div>
 </div>

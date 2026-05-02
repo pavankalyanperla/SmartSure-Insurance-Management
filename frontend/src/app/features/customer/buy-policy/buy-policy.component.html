@@ -21,9 +21,54 @@
 
       @if (selectedPolicyType) {
         <div class="policy-card mb-3">
-          <h3 class="m-0">{{ selectedPolicyType.name }}</h3>
-          <p>{{ selectedPolicyType.description }}</p>
-          <strong>Base Amount: {{ selectedPolicyType.baseAmount | currency:'INR':'symbol':'1.0-0' }}</strong>
+          <div class="policy-card-header">
+            <h3 class="m-0">{{ selectedPolicyType.name }}</h3>
+            <span class="risk-badge risk-{{ selectedPolicyType.riskCategory?.toLowerCase() }}">
+              {{ selectedPolicyType.riskCategory }} Risk
+            </span>
+          </div>
+          <p class="policy-description">{{ selectedPolicyType.description }}</p>
+
+          <div class="policy-meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Base Premium</span>
+              <span class="meta-value highlight-amount">{{ selectedPolicyType.baseAmount | currency:'INR':'symbol':'1.0-0' }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Claim Limit</span>
+              <span class="meta-value">{{ selectedPolicyType.claimLimit | currency:'INR':'symbol':'1.0-0' }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Eligible Age</span>
+              <span class="meta-value">{{ selectedPolicyType.minAge }} – {{ selectedPolicyType.maxAge }} yrs</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Duration</span>
+              <span class="meta-value">{{ selectedPolicyType.durationMonths }} months</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Grace Period</span>
+              <span class="meta-value">{{ selectedPolicyType.gracePeriodDays }} days</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Auto Renewal</span>
+              <span class="meta-value">{{ selectedPolicyType.autoRenewal ? 'Yes' : 'No' }}</span>
+            </div>
+          </div>
+
+          @if (selectedPolicyType.coverageDetails) {
+            <div class="coverage-section">
+              <h4 class="coverage-title"><span class="coverage-icon">✅</span> What's Covered</h4>
+              <p class="coverage-text">{{ selectedPolicyType.coverageDetails }}</p>
+            </div>
+          }
+
+          @if (selectedPolicyType.exclusions) {
+            <div class="exclusions-section">
+              <h4 class="coverage-title"><span class="coverage-icon">❌</span> Exclusions</h4>
+              <p class="coverage-text">{{ selectedPolicyType.exclusions }}</p>
+            </div>
+          }
         </div>
       }
 

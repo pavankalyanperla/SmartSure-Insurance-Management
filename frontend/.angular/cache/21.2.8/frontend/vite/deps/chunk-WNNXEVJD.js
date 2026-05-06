@@ -12,7 +12,7 @@ import {
   s,
   s2,
   z
-} from "./chunk-ZD5QBI7S.js";
+} from "./chunk-P6G6PC67.js";
 import {
   DOCUMENT,
   Injectable,
@@ -936,4 +936,4 @@ export {
   PRIME_NG_CONFIG,
   providePrimeNG
 };
-//# sourceMappingURL=chunk-KLERYROU.js.map
+//# sourceMappingURL=chunk-WNNXEVJD.js.map
